@@ -32,8 +32,8 @@ class AccountService:
         self.repo = AccountRepository(session)
 
     async def list_accounts(self) -> List[Account]:
-        """Get all accounts (active and inactive)."""
-        return await self.repo.get_all()
+        """Get all active accounts."""
+        return await self.repo.get_all_active()
 
     async def list_active_accounts(self) -> List[Account]:
         """Get all active accounts."""
