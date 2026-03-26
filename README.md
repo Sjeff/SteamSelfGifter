@@ -221,6 +221,18 @@ All changes in this release were made in collaboration with [Claude](https://cla
 - Backend process now runs as a non-root `appuser` inside the container
 - Added `stopwaitsecs=30` to supervisord for graceful shutdown of in-flight requests
 - Stage 3 copies backend source from the build stage instead of re-sending from the build context
+- `docker-compose.yml` is now for external deployments (pulls from `ghcr.io/sjeff/steamselfgifter:latest`)
+- `docker-compose.dev.yml` is for local development (builds from source)
+
+#### CI/CD
+
+- Added GitHub Actions workflow for automated Docker image publishing to `ghcr.io`
+- Images are tagged with `latest` on push to `master`, and semver tags (`3.0.0`, `3.0`, `3`) on git tags
+
+#### Bug fixes
+
+- "Session Not Configured" banner now links to the Accounts page instead of the removed Settings page
+- Default account credentials section auto-expands when navigating from the setup banner
 
 ## Contributing
 
