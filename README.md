@@ -1,7 +1,7 @@
 # SteamSelfGifter
 
-[![Tests](https://github.com/kernelcoffee/SteamSelfGifter/actions/workflows/test.yml/badge.svg)](https://github.com/kernelcoffee/SteamSelfGifter/actions/workflows/test.yml)
-[![Docker](https://github.com/kernelcoffee/SteamSelfGifter/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/kernelcoffee/SteamSelfGifter/actions/workflows/docker-publish.yml)
+[![Tests](https://github.com/Sjeff/SteamSelfGifter/actions/workflows/test.yml/badge.svg)](https://github.com/Sjeff/SteamSelfGifter/actions/workflows/test.yml)
+[![Docker](https://github.com/Sjeff/SteamSelfGifter/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Sjeff/SteamSelfGifter/actions/workflows/docker-publish.yml)
 [![Python Version](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
@@ -34,7 +34,7 @@ docker run -d \
   --name steamselfgifter \
   -p 8080:80 \
   -v steamselfgifter-data:/config \
-  ghcr.io/kernelcoffee/steamselfgifter:latest
+  ghcr.io/sjeff/steamselfgifter:latest
 
 # Access the web interface at http://localhost:8080
 ```
@@ -43,7 +43,7 @@ Or with Docker Compose:
 
 ```bash
 # Clone the repository
-git clone https://github.com/kernelcoffee/SteamSelfGifter.git
+git clone https://github.com/Sjeff/SteamSelfGifter.git
 cd SteamSelfGifter
 
 # Start with Docker Compose
