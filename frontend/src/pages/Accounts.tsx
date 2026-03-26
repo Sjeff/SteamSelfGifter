@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router';
 import {
   Plus,
   Trash2,
@@ -417,9 +418,9 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
 
 // ─── Account Row ────────────────────────────────────────────────────────────
 
-function AccountRow({ account }: { account: AccountListItem }) {
-  const [expanded, setExpanded] = useState(false);
-  const [showCredentials, setShowCredentials] = useState(false);
+function AccountRow({ account, defaultOpen = false }: { account: AccountListItem; defaultOpen?: boolean }) {
+  const [expanded, setExpanded] = useState(defaultOpen);
+  const [showCredentials, setShowCredentials] = useState(defaultOpen);
   const [showSettings, setShowSettings] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [renameValue, setRenameValue] = useState(account.name);
@@ -758,6 +759,8 @@ function AccountRow({ account }: { account: AccountListItem }) {
 export function Accounts() {
   const { data: accounts = [], isLoading, error } = useAccounts();
   const [showCreate, setShowCreate] = useState(false);
+  const [searchParams] = useSearchParams();
+  const setupMode = searchParams.get('setup') === 'true';
 
   return (
     <div className="p-6 max-w-2xl">
@@ -798,7 +801,11 @@ export function Accounts() {
 
       <div className="space-y-3">
         {accounts.map((account) => (
-          <AccountRow key={account.id} account={account} />
+          <AccountRow
+            key={account.id}
+            account={account}
+            defaultOpen={setupMode && account.is_default}
+          />
         ))}
       </div>
 

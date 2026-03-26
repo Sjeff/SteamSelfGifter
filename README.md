@@ -39,15 +39,29 @@ docker run -d \
 # Access the web interface at http://localhost:8080
 ```
 
-Or with Docker Compose:
+Or with Docker Compose (recommended for external deployments):
+
+```bash
+# Download the compose file
+curl -O https://raw.githubusercontent.com/Sjeff/SteamSelfGifter/master/docker-compose.yml
+
+# Start
+docker-compose up -d
+
+# Access the web interface at http://localhost:8080
+```
+
+No clone needed — `docker-compose.yml` pulls the pre-built image from `ghcr.io` directly.
+
+### Development / build from source
 
 ```bash
 # Clone the repository
 git clone https://github.com/Sjeff/SteamSelfGifter.git
 cd SteamSelfGifter
 
-# Start with Docker Compose
-docker-compose up -d
+# Build and start locally
+docker-compose -f docker-compose.dev.yml up -d
 
 # Access the web interface at http://localhost:8080
 ```
@@ -122,7 +136,8 @@ SteamSelfGifter/
 │       └── services/     # API client
 ├── docs/                 # Documentation
 ├── Dockerfile            # Multi-stage single-container build
-└── docker-compose.yml    # Docker deployment configuration
+├── docker-compose.yml        # External deployment (pulls from ghcr.io)
+└── docker-compose.dev.yml    # Local development (builds from source)
 ```
 
 ## API Documentation

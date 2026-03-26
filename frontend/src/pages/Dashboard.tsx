@@ -605,14 +605,14 @@ function SessionStatusBanner({ session }: SessionStatusBannerProps) {
             </h3>
             <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
               To start using SteamSelfGifter, you need to configure your SteamGifts session.
-              Go to Settings and enter your PHPSESSID cookie from SteamGifts.com.
+              Go to Accounts and enter your PHPSESSID cookie from SteamGifts.com.
             </p>
             <a
-              href="/settings"
+              href="/accounts?setup=true"
               className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <Settings size={16} />
-              Configure Session
+              Set up credentials
             </a>
           </div>
         </div>

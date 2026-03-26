@@ -1,11 +1,13 @@
 services:
   steamselfgifter:
-    image: ghcr.io/sjeff/steamselfgifter:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: steamselfgifter
     ports:
       - "8080:80"
     volumes:
-      - steamselfgifter-data:/config
+      - ./config:/config:Z
     environment:
       - ENVIRONMENT=production
       - DEBUG=false
@@ -16,6 +18,3 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
-
-volumes:
-  steamselfgifter-data:
