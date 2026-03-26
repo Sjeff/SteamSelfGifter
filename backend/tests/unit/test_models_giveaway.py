@@ -125,20 +125,21 @@ def test_giveaway_timestamps(session):
 
 
 def test_giveaway_unique_code(session):
-    """Test that giveaway code must be unique"""
+    """Test that giveaway code is indexed but not globally unique (unique per account)"""
     # GIVEN: A giveaway with code "UNIQUE1" already exists in the database
-    # WHEN: Attempting to create another giveaway with the same code
-    # THEN: An IntegrityError is raised due to unique constraint violation
+    # WHEN: Creating another giveaway with the same code for a different account
+    # THEN: No error is raised — code uniqueness is enforced per account, not globally
 
-    giveaway1 = Giveaway(code="UNIQUE1", url="/test1", game_name="Game 1", price=10)
-    giveaway2 = Giveaway(code="UNIQUE1", url="/test2", game_name="Game 2", price=20)
+    giveaway1 = Giveaway(code="UNIQUE1", url="/test1", game_name="Game 1", price=10, account_id=1)
+    giveaway2 = Giveaway(code="UNIQUE1", url="/test2", game_name="Game 2", price=20, account_id=2)
 
     session.add(giveaway1)
     session.commit()
 
     session.add(giveaway2)
-    with pytest.raises(IntegrityError):
-        session.commit()
+    session.commit()  # Should not raise — code is no longer globally unique
+
+    assert session.query(Giveaway).filter_by(code="UNIQUE1").count() == 2
 
 
 def test_giveaway_repr(session):

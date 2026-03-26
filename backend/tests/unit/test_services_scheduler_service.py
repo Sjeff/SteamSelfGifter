@@ -56,7 +56,7 @@ async def test_scheduler_service_init(test_db, mock_giveaway_service):
 
         assert service.session == session
         assert service.giveaway_service == mock_giveaway_service
-        assert service.settings_repo is not None
+        assert service.account_repo is not None
 
 
 @pytest.mark.asyncio
@@ -104,11 +104,11 @@ async def test_run_automation_cycle_success(test_db, mock_giveaway_service):
         )
         mock_giveaway_service.get_eligible_giveaways = AsyncMock(return_value=[])
 
-        # Set up settings
-        settings = await service.settings_repo.get_settings()
-        settings.max_scan_pages = 3
-        settings.autojoin_min_price = 50
-        settings.max_entries_per_cycle = 10
+        # Set up account settings
+        account = await service.account_repo.get_default()
+        account.max_scan_pages = 3
+        account.autojoin_min_price = 50
+        account.max_entries_per_cycle = 10
         await session.commit()
 
         # Run cycle

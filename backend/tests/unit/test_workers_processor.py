@@ -18,6 +18,8 @@ async def test_process_giveaways_success():
     mock_settings.autojoin_min_reviews = 100
     mock_settings.autojoin_max_game_age = None
     mock_settings.max_entries_per_cycle = 5
+    mock_settings.autojoin_start_at = 0
+    mock_settings.autojoin_stop_at = 0
     mock_settings.entry_delay_min = 0.01
     mock_settings.entry_delay_max = 0.02
 
@@ -141,6 +143,8 @@ async def test_process_giveaways_no_eligible():
     mock_settings.autojoin_min_reviews = 100
     mock_settings.autojoin_max_game_age = None
     mock_settings.max_entries_per_cycle = 5
+    mock_settings.autojoin_start_at = 0
+    mock_settings.autojoin_stop_at = 0
 
     with patch("workers.processor.AsyncSessionLocal") as mock_session_local, \
          patch("workers.processor.SettingsService") as mock_settings_service_cls, \
@@ -194,6 +198,8 @@ async def test_process_giveaways_entry_failure():
     mock_settings.autojoin_min_reviews = 100
     mock_settings.autojoin_max_game_age = None
     mock_settings.max_entries_per_cycle = 5
+    mock_settings.autojoin_start_at = 0
+    mock_settings.autojoin_stop_at = 0
     mock_settings.entry_delay_min = 0.01
     mock_settings.entry_delay_max = 0.02
 
@@ -259,6 +265,8 @@ async def test_process_giveaways_entry_error():
     mock_settings.autojoin_min_reviews = 100
     mock_settings.autojoin_max_game_age = None
     mock_settings.max_entries_per_cycle = 5
+    mock_settings.autojoin_start_at = 0
+    mock_settings.autojoin_stop_at = 0
     mock_settings.entry_delay_min = 0.01
     mock_settings.entry_delay_max = 0.02
 
