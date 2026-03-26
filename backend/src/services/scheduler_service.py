@@ -9,13 +9,13 @@ from datetime import datetime, timedelta
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from repositories.settings import SettingsRepository
+from repositories.account import AccountRepository
 from repositories.giveaway import GiveawayRepository
 from services.giveaway_service import GiveawayService
 from models.scheduler_state import SchedulerState
 from workers.scheduler import scheduler_manager
 
-# Job ID for the win check job
+# Job ID for the win check job (account-scoped: win_check_{account_id})
 WIN_CHECK_JOB_ID = "win_check"
 
 
@@ -50,6 +50,7 @@ class SchedulerService:
         self,
         session: AsyncSession,
         giveaway_service: GiveawayService,
+        account_id: Optional[int] = None,
     ):
         """
         Initialize SchedulerService.
@@ -57,29 +58,41 @@ class SchedulerService:
         Args:
             session: Database session
             giveaway_service: GiveawayService for entering giveaways
-
-        Example:
-            >>> service = SchedulerService(session, giveaway_service)
+            account_id: When set, scheduler state is scoped to this account.
         """
         self.session = session
         self.giveaway_service = giveaway_service
-        self.settings_repo = SettingsRepository(session)
-        self.giveaway_repo = GiveawayRepository(session)
+        self.account_id = account_id
+        self.account_repo = AccountRepository(session)
+        self.giveaway_repo = GiveawayRepository(session, account_id=account_id)
+
+    @property
+    def _win_check_job_id(self) -> str:
+        """Account-scoped win check job ID."""
+        if self.account_id is not None:
+            return f"win_check_{self.account_id}"
+        return WIN_CHECK_JOB_ID
 
     async def _get_or_create_state(self) -> SchedulerState:
         """
-        Get or create scheduler state (singleton).
+        Get or create scheduler state for this account.
 
         Returns:
-            SchedulerState object (id=1)
+            SchedulerState object for the current account (or legacy id=1)
         """
-        result = await self.session.execute(
-            select(SchedulerState).where(SchedulerState.id == 1)
-        )
+        if self.account_id is not None:
+            result = await self.session.execute(
+                select(SchedulerState).where(SchedulerState.account_id == self.account_id)
+            )
+        else:
+            # Backward compat: use legacy id=1 or account_id=None row
+            result = await self.session.execute(
+                select(SchedulerState).where(SchedulerState.id == 1)
+            )
         state = result.scalar_one_or_none()
 
         if not state:
-            state = SchedulerState(id=1)
+            state = SchedulerState(account_id=self.account_id)
             self.session.add(state)
             await self.session.flush()
 
@@ -107,7 +120,10 @@ class SchedulerService:
             >>> results = await service.run_automation_cycle()
             >>> print(f"Entered {results['entered']} giveaways")
         """
-        settings = await self.settings_repo.get_settings()
+        if self.account_id is not None:
+            settings = await self.account_repo.get_by_id(self.account_id)
+        else:
+            settings = await self.account_repo.get_default()
         state = await self._get_or_create_state()
 
         # Track statistics
@@ -362,7 +378,7 @@ class SchedulerService:
 
         if not next_giveaway or not next_giveaway.end_time:
             # No pending giveaways, remove job if exists
-            self._remove_win_check_job()
+            scheduler_manager.remove_job(self._win_check_job_id)
             return None
 
         # Schedule job for slightly after the giveaway ends
@@ -391,18 +407,19 @@ class SchedulerService:
         # Create the job (replace_existing=True handles updates)
         scheduler_manager.add_date_job(
             func=self._win_check_callback,
-            job_id=WIN_CHECK_JOB_ID,
+            job_id=self._win_check_job_id,
             run_date=run_date,
         )
 
         logger.info(
             "win_check_scheduled",
             run_date=run_date.isoformat(),
+            account_id=self.account_id,
         )
 
     def _remove_win_check_job(self) -> None:
         """Remove the win check job if it exists."""
-        scheduler_manager.remove_job(WIN_CHECK_JOB_ID)
+        scheduler_manager.remove_job(self._win_check_job_id)
 
     async def _win_check_callback(self) -> None:
         """
@@ -447,7 +464,7 @@ class SchedulerService:
             return
 
         # Get current job
-        job = scheduler_manager.get_job(WIN_CHECK_JOB_ID)
+        job = scheduler_manager.get_job(self._win_check_job_id)
 
         # Calculate when we'd check for this giveaway
         new_check_time = giveaway_end_time + timedelta(minutes=5)
@@ -476,7 +493,7 @@ class SchedulerService:
             >>> if status['scheduled']:
             ...     print(f"Next check: {status['next_check_at']}")
         """
-        job = scheduler_manager.get_job(WIN_CHECK_JOB_ID)
+        job = scheduler_manager.get_job(self._win_check_job_id)
 
         if job and job.next_run_time:
             return {

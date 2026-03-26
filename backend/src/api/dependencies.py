@@ -4,7 +4,7 @@ This module provides dependency functions for FastAPI endpoints,
 enabling clean dependency injection of database sessions and service layers.
 """
 
-from typing import Annotated
+from typing import Annotated, Optional
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -14,6 +14,7 @@ from services.notification_service import NotificationService
 from services.game_service import GameService
 from services.giveaway_service import GiveawayService
 from services.scheduler_service import SchedulerService
+from services.account_service import AccountService
 from utils.steam_client import SteamClient
 from utils.steamgifts_client import SteamGiftsClient
 
@@ -43,12 +44,13 @@ DatabaseDep = Annotated[AsyncSession, Depends(get_database)]
 
 
 # Service dependencies
-def get_settings_service(db: DatabaseDep) -> SettingsService:
+def get_settings_service(db: DatabaseDep, account_id: Optional[int] = None) -> SettingsService:
     """
     Get SettingsService dependency.
 
     Args:
         db: Database session from dependency injection
+        account_id: Optional account ID to scope to (from query param)
 
     Returns:
         SettingsService instance
@@ -60,15 +62,16 @@ def get_settings_service(db: DatabaseDep) -> SettingsService:
         ):
             return await settings_service.get_settings()
     """
-    return SettingsService(db)
+    return SettingsService(db, account_id=account_id)
 
 
-def get_notification_service(db: DatabaseDep) -> NotificationService:
+def get_notification_service(db: DatabaseDep, account_id: Optional[int] = None) -> NotificationService:
     """
     Get NotificationService dependency.
 
     Args:
         db: Database session from dependency injection
+        account_id: Optional account ID to scope logs to
 
     Returns:
         NotificationService instance
@@ -80,7 +83,7 @@ def get_notification_service(db: DatabaseDep) -> NotificationService:
         ):
             return await notification_service.get_recent_logs()
     """
-    return NotificationService(db)
+    return NotificationService(db, account_id=account_id)
 
 
 # Type aliases for service dependencies (for cleaner endpoint signatures)
@@ -113,29 +116,35 @@ async def get_game_service(db: DatabaseDep) -> GameService:
     return GameService(db, steam_client)
 
 
-async def get_giveaway_service(db: DatabaseDep) -> GiveawayService:
+def get_account_service(db: DatabaseDep) -> AccountService:
+    """Get AccountService dependency."""
+    return AccountService(db)
+
+
+AccountServiceDep = Annotated[AccountService, Depends(get_account_service)]
+
+
+async def get_giveaway_service(
+    db: DatabaseDep,
+    account_id: Optional[int] = None,
+) -> GiveawayService:
     """
     Get GiveawayService dependency.
 
-    Creates a GiveawayService with SteamGiftsClient and GameService.
-    Note: Requires PHPSESSID to be configured in settings for entry operations.
+    When account_id is provided (via query param), uses that account.
+    Otherwise uses the default account.
 
     Args:
         db: Database session from dependency injection
+        account_id: Optional account ID to scope to
 
     Returns:
-        GiveawayService instance
-
-    Example:
-        @router.get("/giveaways")
-        async def list_giveaways(
-            giveaway_service: GiveawayService = Depends(get_giveaway_service)
-        ):
-            return await giveaway_service.get_active_giveaways()
+        GiveawayService instance scoped to the account
     """
-    # Get settings for credentials
-    settings_service = SettingsService(db)
+    # Get account settings for credentials
+    settings_service = SettingsService(db, account_id=account_id)
     settings = await settings_service.get_settings()
+    resolved_account_id = settings.id
 
     # Create SteamGifts client (may not be authenticated)
     sg_client = SteamGiftsClient(
@@ -151,29 +160,25 @@ async def get_giveaway_service(db: DatabaseDep) -> GiveawayService:
     # Create game service
     game_service = GameService(db, steam_client)
 
-    return GiveawayService(db, sg_client, game_service)
+    return GiveawayService(db, sg_client, game_service, account_id=resolved_account_id)
 
 
-async def get_scheduler_service(db: DatabaseDep) -> SchedulerService:
+async def get_scheduler_service(
+    db: DatabaseDep,
+    account_id: Optional[int] = None,
+) -> SchedulerService:
     """
     Get SchedulerService dependency.
 
     Args:
         db: Database session from dependency injection
+        account_id: Optional account ID to scope to
 
     Returns:
         SchedulerService instance
-
-    Example:
-        @router.get("/scheduler/stats")
-        async def get_stats(
-            scheduler_service: SchedulerService = Depends(get_scheduler_service)
-        ):
-            return await scheduler_service.get_scheduler_stats()
     """
-    # SchedulerService needs GiveawayService, so get that first
-    giveaway_service = await get_giveaway_service(db)
-    return SchedulerService(db, giveaway_service)
+    giveaway_service = await get_giveaway_service(db, account_id=account_id)
+    return SchedulerService(db, giveaway_service, account_id=account_id)
 
 
 # Type aliases for new service dependencies

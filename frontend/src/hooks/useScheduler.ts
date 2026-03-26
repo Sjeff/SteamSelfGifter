@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import type { SchedulerStatus, ScanResult, ProcessResult, WinSyncResult, AutomationCycleResult } from '@/types';
+import { useAccountStore } from '@/stores/accountStore';
 
 /**
  * Query keys for scheduler
@@ -11,13 +12,18 @@ export const schedulerKeys = {
 };
 
 /**
- * Fetch scheduler status
+ * Fetch scheduler status (per-account when an account is selected)
  */
 export function useSchedulerStatus() {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+
   return useQuery({
-    queryKey: schedulerKeys.status,
+    queryKey: [...schedulerKeys.status, selectedAccountId],
     queryFn: async () => {
-      const response = await api.get<SchedulerStatus>('/api/v1/scheduler/status');
+      const endpoint = selectedAccountId
+        ? `/api/v1/accounts/${selectedAccountId}/scheduler/status`
+        : '/api/v1/scheduler/status';
+      const response = await api.get<SchedulerStatus>(endpoint);
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch scheduler status');
       }
@@ -33,10 +39,14 @@ export function useSchedulerStatus() {
  */
 export function useStartScheduler() {
   const queryClient = useQueryClient();
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
 
   return useMutation({
     mutationFn: async () => {
-      const response = await api.post<SchedulerStatus>('/api/v1/scheduler/start');
+      const endpoint = selectedAccountId
+        ? `/api/v1/accounts/${selectedAccountId}/scheduler/start`
+        : '/api/v1/scheduler/start';
+      const response = await api.post<SchedulerStatus>(endpoint);
       if (!response.success) {
         throw new Error(response.error || 'Failed to start scheduler');
       }
@@ -53,10 +63,14 @@ export function useStartScheduler() {
  */
 export function useStopScheduler() {
   const queryClient = useQueryClient();
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
 
   return useMutation({
     mutationFn: async () => {
-      const response = await api.post<SchedulerStatus>('/api/v1/scheduler/stop');
+      const endpoint = selectedAccountId
+        ? `/api/v1/accounts/${selectedAccountId}/scheduler/stop`
+        : '/api/v1/scheduler/stop';
+      const response = await api.post<SchedulerStatus>(endpoint);
       if (!response.success) {
         throw new Error(response.error || 'Failed to stop scheduler');
       }
@@ -113,10 +127,14 @@ export function useResumeScheduler() {
  */
 export function useTriggerScan() {
   const queryClient = useQueryClient();
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
 
   return useMutation({
     mutationFn: async () => {
-      const response = await api.post<ScanResult>('/api/v1/scheduler/scan');
+      const endpoint = selectedAccountId
+        ? `/api/v1/accounts/${selectedAccountId}/scheduler/scan`
+        : '/api/v1/scheduler/scan';
+      const response = await api.post<ScanResult>(endpoint);
       if (!response.success) {
         throw new Error(response.error || 'Failed to trigger scan');
       }
@@ -135,10 +153,14 @@ export function useTriggerScan() {
  */
 export function useTriggerProcess() {
   const queryClient = useQueryClient();
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
 
   return useMutation({
     mutationFn: async () => {
-      const response = await api.post<ProcessResult>('/api/v1/scheduler/process');
+      const endpoint = selectedAccountId
+        ? `/api/v1/accounts/${selectedAccountId}/scheduler/process`
+        : '/api/v1/scheduler/process';
+      const response = await api.post<ProcessResult>(endpoint);
       if (!response.success) {
         throw new Error(response.error || 'Failed to trigger process');
       }
@@ -158,10 +180,14 @@ export function useTriggerProcess() {
  */
 export function useSyncWins() {
   const queryClient = useQueryClient();
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
 
   return useMutation({
     mutationFn: async () => {
-      const response = await api.post<WinSyncResult>('/api/v1/scheduler/sync-wins');
+      const endpoint = selectedAccountId
+        ? `/api/v1/accounts/${selectedAccountId}/scheduler/sync-wins`
+        : '/api/v1/scheduler/sync-wins';
+      const response = await api.post<WinSyncResult>(endpoint);
       if (!response.success) {
         throw new Error(response.error || 'Failed to sync wins');
       }
@@ -180,10 +206,15 @@ export function useSyncWins() {
  */
 export function useRunAutomationCycle() {
   const queryClient = useQueryClient();
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
 
   return useMutation({
     mutationFn: async () => {
-      const response = await api.post<AutomationCycleResult>('/api/v1/scheduler/run');
+      // Use account-specific endpoint if an account is selected
+      const endpoint = selectedAccountId
+        ? `/api/v1/accounts/${selectedAccountId}/scheduler/run`
+        : '/api/v1/scheduler/run';
+      const response = await api.post<AutomationCycleResult>(endpoint);
       if (!response.success) {
         throw new Error(response.error || 'Failed to run automation cycle');
       }

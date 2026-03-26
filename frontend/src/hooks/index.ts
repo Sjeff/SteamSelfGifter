@@ -1,3 +1,19 @@
+// Account hooks
+export {
+  useAccounts,
+  useAccount,
+  useCreateAccount,
+  useUpdateAccount,
+  useDeleteAccount,
+  useSetDefaultAccount,
+  useSetAccountCredentials,
+  useClearAccountCredentials,
+  useTestAccountSession,
+  useStartAccountAutomation,
+  useStopAccountAutomation,
+  accountKeys,
+} from './useAccounts';
+
 // Settings hooks
 export {
   useSettings,

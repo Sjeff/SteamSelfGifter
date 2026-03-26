@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import type { EntryWithGiveaway } from '@/types';
+import { useAccountStore } from '@/stores/accountStore';
 
 /**
  * Query keys for entries
@@ -24,6 +25,7 @@ export interface EntryFilters {
   to_date?: string;
   page?: number;
   limit?: number;
+  accountId?: number;
 }
 
 /**
@@ -49,10 +51,14 @@ interface EntriesApiResponse {
  * Fetch entries (history) with optional filters
  */
 export function useEntries(filters: EntryFilters = {}) {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+  const effectiveAccountId = filters.accountId ?? selectedAccountId;
+
   return useQuery({
-    queryKey: entryKeys.list(filters),
+    queryKey: [...entryKeys.list(filters), effectiveAccountId],
     queryFn: async () => {
       const params = new URLSearchParams();
+      if (effectiveAccountId) params.set('account_id', String(effectiveAccountId));
 
       if (filters.status && filters.status !== 'all') {
         params.set('status', filters.status);

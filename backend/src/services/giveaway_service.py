@@ -58,6 +58,7 @@ class GiveawayService:
         session: AsyncSession,
         steamgifts_client: SteamGiftsClient,
         game_service: GameService,
+        account_id: Optional[int] = None,
     ):
         """
         Initialize GiveawayService.
@@ -66,15 +67,17 @@ class GiveawayService:
             session: Database session
             steamgifts_client: SteamGifts web scraping client (must be started)
             game_service: Game service for caching game data
+            account_id: When set, all DB operations are scoped to this account.
 
         Example:
-            >>> service = GiveawayService(session, sg_client, game_service)
+            >>> service = GiveawayService(session, sg_client, game_service, account_id=1)
         """
         self.session = session
         self.sg_client = steamgifts_client
         self.game_service = game_service
-        self.giveaway_repo = GiveawayRepository(session)
-        self.entry_repo = EntryRepository(session)
+        self.account_id = account_id
+        self.giveaway_repo = GiveawayRepository(session, account_id=account_id)
+        self.entry_repo = EntryRepository(session, account_id=account_id)
 
     async def sync_giveaways(
         self,
@@ -190,6 +193,7 @@ class GiveawayService:
                         await self.giveaway_repo.create(
                             code=win["code"],
                             url=url,
+                            account_id=self.account_id,
                             game_name=win["game_name"],
                             price=0,  # Unknown price for historical wins
                             game_id=win.get("game_id"),
@@ -246,6 +250,7 @@ class GiveawayService:
                         await self.giveaway_repo.create(
                             code=entry["code"],
                             url=url,
+                            account_id=self.account_id,
                             game_name=entry["game_name"],
                             price=entry.get("price", 0),
                             game_id=entry.get("game_id"),
@@ -302,6 +307,7 @@ class GiveawayService:
         giveaway = await self.giveaway_repo.create(
             code=ga_data["code"],
             url=url,
+            account_id=self.account_id,
             game_name=ga_data["game_name"],
             price=ga_data["price"],
             copies=ga_data.get("copies", 1),
@@ -372,6 +378,7 @@ class GiveawayService:
                 # Create entry record
                 entry = await self.entry_repo.create(
                     giveaway_id=giveaway.id,
+                    account_id=self.account_id,
                     points_spent=giveaway.price,
                     entry_type=entry_type,
                     status="success",
@@ -383,6 +390,7 @@ class GiveawayService:
                 # Entry failed
                 entry = await self.entry_repo.create(
                     giveaway_id=giveaway.id,
+                    account_id=self.account_id,
                     points_spent=0,
                     entry_type=entry_type,
                     status="failed",
@@ -396,6 +404,7 @@ class GiveawayService:
             # Record failed entry
             entry = await self.entry_repo.create(
                 giveaway_id=giveaway.id,
+                account_id=self.account_id,
                 points_spent=0,
                 entry_type=entry_type,
                 status="failed",
@@ -958,6 +967,7 @@ class GiveawayService:
                 if giveaway:
                     await self.entry_repo.create(
                         giveaway_id=giveaway.id,
+                        account_id=self.account_id,
                         points_spent=0,
                         entry_type=entry_type,
                         status="failed",

@@ -23,7 +23,7 @@ from core.events import event_manager
 logger = structlog.get_logger()
 
 
-async def process_giveaways() -> Dict[str, Any]:
+async def process_giveaways(account_id: int = None) -> Dict[str, Any]:
     """
     Process eligible giveaways and enter them automatically.
 
@@ -31,6 +31,9 @@ async def process_giveaways() -> Dict[str, Any]:
     1. Gets eligible giveaways based on settings criteria
     2. Enters them respecting limits and delays
     3. Tracks statistics and emits events
+
+    Args:
+        account_id: Account to process for. When None, uses the default account.
 
     Returns:
         Dictionary with processing results:
@@ -46,12 +49,13 @@ async def process_giveaways() -> Dict[str, Any]:
     """
     start_time = datetime.now(UTC)
 
-    logger.info("giveaway_processing_started")
+    logger.info("giveaway_processing_started", account_id=account_id)
 
     async with AsyncSessionLocal() as session:
         # Check settings
-        settings_service = SettingsService(session)
+        settings_service = SettingsService(session, account_id=account_id)
         settings = await settings_service.get_settings()
+        account_id = settings.id
 
         # Skip if not authenticated
         if not settings.phpsessid:
@@ -93,10 +97,32 @@ async def process_giveaways() -> Dict[str, Any]:
             session=session,
             steamgifts_client=sg_client,
             game_service=game_service,
+            account_id=account_id,
         )
-        notification_service = NotificationService(session=session)
+        notification_service = NotificationService(session=session, account_id=account_id)
 
         try:
+            # Check current points before starting
+            start_at = settings.autojoin_start_at or 0
+            stop_at = settings.autojoin_stop_at or 0
+            current_points = await giveaway_service.get_current_points()
+
+            if start_at > 0 and current_points < start_at:
+                logger.info(
+                    "giveaway_processing_skipped",
+                    reason="insufficient_points",
+                    current_points=current_points,
+                    start_at=start_at,
+                )
+                return {
+                    "eligible": 0,
+                    "entered": 0,
+                    "failed": 0,
+                    "points_spent": 0,
+                    "skipped": True,
+                    "reason": f"insufficient_points ({current_points}P < {start_at}P required)",
+                }
+
             # Get eligible giveaways
             max_entries = settings.max_entries_per_cycle or 10
             eligible = await giveaway_service.get_eligible_giveaways(
@@ -130,6 +156,23 @@ async def process_giveaways() -> Dict[str, Any]:
             delay_max = settings.entry_delay_max or 15
 
             for i, giveaway in enumerate(eligible):
+                # Check if we should stop (points dropped below stop_at threshold)
+                if stop_at > 0:
+                    current_points = await giveaway_service.get_current_points()
+                    if current_points <= stop_at:
+                        logger.info(
+                            "giveaway_processing_stopped",
+                            reason="points_below_stop_threshold",
+                            current_points=current_points,
+                            stop_at=stop_at,
+                        )
+                        await notification_service.log_activity(
+                            level="info",
+                            event_type="entry",
+                            message=f"Processing stopped: points ({current_points}P) dropped to stop threshold ({stop_at}P)"
+                        )
+                        break
+
                 # Apply delay between entries (except for first one)
                 if i > 0:
                     delay = random.uniform(delay_min, delay_max)
@@ -272,6 +315,27 @@ async def _process_entries(
     """
     start_time = datetime.now(UTC)
 
+    # Check current points before starting
+    start_at = settings.autojoin_start_at or 0
+    stop_at = settings.autojoin_stop_at or 0
+    current_points = await giveaway_service.get_current_points()
+
+    if start_at > 0 and current_points < start_at:
+        logger.info(
+            "entry_processing_skipped",
+            reason="insufficient_points",
+            current_points=current_points,
+            start_at=start_at,
+        )
+        return {
+            "eligible": 0,
+            "entered": 0,
+            "failed": 0,
+            "points_spent": 0,
+            "skipped": True,
+            "reason": f"insufficient_points ({current_points}P < {start_at}P required)",
+        }
+
     # Get eligible giveaways
     max_entries = settings.max_entries_per_cycle or 10
     eligible = await giveaway_service.get_eligible_giveaways(
@@ -305,6 +369,23 @@ async def _process_entries(
     delay_max = settings.entry_delay_max or 15
 
     for i, giveaway in enumerate(eligible):
+        # Check if we should stop (points dropped below stop_at threshold)
+        if stop_at > 0:
+            current_points = await giveaway_service.get_current_points()
+            if current_points <= stop_at:
+                logger.info(
+                    "entry_processing_stopped",
+                    reason="points_below_stop_threshold",
+                    current_points=current_points,
+                    stop_at=stop_at,
+                )
+                await notification_service.log_activity(
+                    level="info",
+                    event_type="entry",
+                    message=f"Processing stopped: points ({current_points}P) dropped to stop threshold ({stop_at}P)"
+                )
+                break
+
         # Apply delay between entries (except for first one)
         if i > 0:
             delay = random.uniform(delay_min, delay_max)

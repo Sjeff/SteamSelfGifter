@@ -14,6 +14,9 @@ WORKDIR /frontend
 COPY frontend/package*.json ./
 RUN npm ci
 
+# Copy root package.json (used by vite.config.ts for version)
+COPY package.json /package.json
+
 # Copy source and build
 COPY frontend/ ./
 RUN npm run build
@@ -46,16 +49,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user for backend process
+RUN groupadd --system appuser && useradd --system --gid appuser appuser
+
 # Copy Python virtual environment from build stage
 COPY --from=backend-build /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# Copy backend source code
+# Copy backend source from build stage (avoids re-sending from build context)
 WORKDIR /app
-COPY backend/src/ ./src/
+COPY --from=backend-build /app/src ./src/
 
 # Create config directory for persistent data (database + logs)
-RUN mkdir -p /config
+RUN mkdir -p /config && chown appuser:appuser /config && chown -R appuser:appuser /app
 
 # Copy frontend build to nginx html directory
 COPY --from=frontend-build /frontend/dist /usr/share/nginx/html
@@ -123,6 +129,7 @@ user=root
 command=/usr/sbin/nginx -g "daemon off;"
 autostart=true
 autorestart=true
+stopwaitsecs=30
 stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 stderr_logfile=/dev/stderr
@@ -131,8 +138,10 @@ stderr_logfile_maxbytes=0
 [program:backend]
 command=/opt/venv/bin/python -m uvicorn api.main:app --host 127.0.0.1 --port 8000
 directory=/app/src
+user=appuser
 autostart=true
 autorestart=true
+stopwaitsecs=30
 stdout_logfile=/dev/stdout
 stdout_logfile_maxbytes=0
 stderr_logfile=/dev/stderr

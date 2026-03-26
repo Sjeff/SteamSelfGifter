@@ -15,6 +15,7 @@ import { History } from '@/pages/History';
 import { Analytics } from '@/pages/Analytics';
 import { Settings } from '@/pages/Settings';
 import { Logs } from '@/pages/Logs';
+import { Accounts } from '@/pages/Accounts';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -49,6 +50,7 @@ function AppContent() {
           <Route path="/wins" element={<Wins />} />
           <Route path="/history" element={<History />} />
           <Route path="/analytics" element={<Analytics />} />
+          <Route path="/accounts" element={<Accounts />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/logs" element={<Logs />} />
 

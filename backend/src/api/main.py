@@ -30,6 +30,7 @@ from api.middleware import (
 )
 from api.routers import settings as settings_router
 from api.routers import system, websocket, scheduler, giveaways, games, entries, analytics
+from api.routers import accounts as accounts_router
 from core.config import settings
 from core.exceptions import (
     AppException,
@@ -76,41 +77,45 @@ async def lifespan(app: FastAPI):
         environment=settings.environment,
     )
 
-    # Check if automation should auto-start
+    # Check if automation should auto-start (per account)
     try:
+        from functools import partial
+        from repositories.account import AccountRepository
+
         async with AsyncSessionLocal() as session:
-            settings_service = SettingsService(session)
-            app_settings = await settings_service.get_settings()
+            account_repo = AccountRepository(session)
+            active_accounts = await account_repo.get_all_active()
 
-            if app_settings.automation_enabled:
-                logger.info("auto_starting_scheduler")
+            for account in active_accounts:
+                if account.automation_enabled:
+                    logger.info("auto_starting_scheduler_for_account", account_id=account.id, account_name=account.name)
 
-                # Start the scheduler
-                scheduler_manager.start()
+                    # Start the scheduler (idempotent)
+                    scheduler_manager.start()
 
-                # Get scan interval
-                scan_interval = app_settings.scan_interval_minutes or 30
+                    scan_interval = account.scan_interval_minutes or 30
 
-                # Add the single automation cycle job
-                scheduler_manager.add_interval_job(
-                    func=automation_cycle,
-                    job_id="automation_cycle",
-                    minutes=scan_interval,
-                )
-
-                # Add safety check job (runs every 45 seconds, slow rate to avoid rate limits)
-                if app_settings.safety_check_enabled:
+                    # Add per-account automation cycle job
                     scheduler_manager.add_interval_job(
-                        func=safety_check_cycle,
-                        job_id="safety_check",
-                        seconds=45,
+                        func=partial(automation_cycle, account_id=account.id),
+                        job_id=f"automation_cycle_{account.id}",
+                        minutes=scan_interval,
                     )
-                    logger.info("safety_check_job_started", interval_seconds=45)
 
-                logger.info(
-                    "scheduler_auto_started",
-                    cycle_interval_minutes=scan_interval,
-                )
+                    # Add per-account safety check job
+                    if account.safety_check_enabled:
+                        scheduler_manager.add_interval_job(
+                            func=partial(safety_check_cycle, account_id=account.id),
+                            job_id=f"safety_check_{account.id}",
+                            seconds=45,
+                        )
+                        logger.info("safety_check_job_started", account_id=account.id, interval_seconds=45)
+
+                    logger.info(
+                        "scheduler_auto_started",
+                        account_id=account.id,
+                        cycle_interval_minutes=scan_interval,
+                    )
     except Exception as e:
         logger.error("scheduler_auto_start_failed", error=str(e))
 
@@ -200,6 +205,11 @@ app.include_router(
     analytics.router,
     prefix=f"{settings.api_v1_prefix}/analytics",
     tags=["analytics"],
+)
+app.include_router(
+    accounts_router.router,
+    prefix=f"{settings.api_v1_prefix}/accounts",
+    tags=["accounts"],
 )
 
 

@@ -25,33 +25,22 @@ from core.events import event_manager
 logger = structlog.get_logger()
 
 
-async def automation_cycle() -> Dict[str, Any]:
+async def automation_cycle(account_id: int = None) -> Dict[str, Any]:
     """
-    Run a complete automation cycle.
+    Run a complete automation cycle for a specific account.
 
-    This is the main automation job that runs all tasks in sequence:
-    1. Scan regular giveaways from SteamGifts
-    2. Scan wishlist giveaways
-    3. Sync wins from the won page
-    4. Process and enter eligible giveaways
+    Args:
+        account_id: Account to run the cycle for. When None, uses the default account.
 
     Returns:
-        Dictionary with cycle results:
-            - scan: Scan results (new, updated counts)
-            - wishlist: Wishlist scan results
-            - wins: New wins found
-            - entries: Entry results (entered, failed counts)
-            - cycle_time: Total time for the cycle
-
-    Example:
-        >>> results = await automation_cycle()
-        >>> print(f"Cycle complete: {results['entries']['entered']} entries")
+        Dictionary with cycle results.
     """
     start_time = datetime.now(UTC)
 
-    logger.info("automation_cycle_started")
+    logger.info("automation_cycle_started", account_id=account_id)
 
     results = {
+        "account_id": account_id,
         "scan": {"new": 0, "updated": 0, "skipped": False},
         "wishlist": {"new": 0, "updated": 0, "skipped": False},
         "wins": {"new_wins": 0, "skipped": False},
@@ -62,8 +51,10 @@ async def automation_cycle() -> Dict[str, Any]:
 
     async with AsyncSessionLocal() as session:
         # Check settings
-        settings_service = SettingsService(session)
+        settings_service = SettingsService(session, account_id=account_id)
         settings = await settings_service.get_settings()
+        # Resolve account_id from the returned account object
+        account_id = settings.id
 
         # Skip if not authenticated
         if not settings.phpsessid:
@@ -82,15 +73,20 @@ async def automation_cycle() -> Dict[str, Any]:
         steam_client = SteamClient()
         await steam_client.start()
 
-        # Create services
+        # Create services (all scoped to this account)
         game_service = GameService(session=session, steam_client=steam_client)
         giveaway_service = GiveawayService(
             session=session,
             steamgifts_client=sg_client,
             game_service=game_service,
+            account_id=account_id,
         )
-        notification_service = NotificationService(session=session)
-        scheduler_service = SchedulerService(session=session, giveaway_service=giveaway_service)
+        notification_service = NotificationService(session=session, account_id=account_id)
+        scheduler_service = SchedulerService(
+            session=session,
+            giveaway_service=giveaway_service,
+            account_id=account_id,
+        )
 
         try:
             # === STEP 1: Scan regular giveaways ===
@@ -220,6 +216,7 @@ async def automation_cycle() -> Dict[str, Any]:
 
             logger.info(
                 "automation_cycle_completed",
+                account_id=account_id,
                 scan_new=results["scan"]["new"],
                 scan_updated=results["scan"]["updated"],
                 wishlist_new=results["wishlist"]["new"],
@@ -228,7 +225,7 @@ async def automation_cycle() -> Dict[str, Any]:
                 cycle_time=results["cycle_time"],
             )
 
-            # Emit completion event
+            # Emit completion event (includes account_id for frontend filtering)
             await event_manager.broadcast_event("automation_cycle_completed", results)
 
             return results
@@ -247,18 +244,22 @@ async def automation_cycle() -> Dict[str, Any]:
             await steam_client.close()
 
 
-async def sync_wins_only() -> Dict[str, Any]:
+async def sync_wins_only(account_id: int = None) -> Dict[str, Any]:
     """
-    Sync wins only (manual trigger).
+    Sync wins only (manual trigger) for a specific account.
+
+    Args:
+        account_id: Account to sync wins for. None = default account.
 
     Returns:
         Dictionary with win sync results
     """
-    logger.info("sync_wins_started")
+    logger.info("sync_wins_started", account_id=account_id)
 
     async with AsyncSessionLocal() as session:
-        settings_service = SettingsService(session)
+        settings_service = SettingsService(session, account_id=account_id)
         settings = await settings_service.get_settings()
+        account_id = settings.id  # Resolve to concrete account ID
 
         if not settings.phpsessid:
             return {"new_wins": 0, "skipped": True, "reason": "not_authenticated"}
@@ -277,6 +278,7 @@ async def sync_wins_only() -> Dict[str, Any]:
             session=session,
             steamgifts_client=sg_client,
             game_service=game_service,
+            account_id=account_id,
         )
 
         try:

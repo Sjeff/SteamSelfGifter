@@ -36,17 +36,33 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         ...     giveaway = await repo.get_by_code("AbCd1")
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, account_id: Optional[int] = None):
         """
         Initialize GiveawayRepository with database session.
 
         Args:
             session: The async database session
+            account_id: When set, all queries are scoped to this account.
+                        When None, queries are not filtered by account (legacy / admin use).
 
         Example:
-            >>> repo = GiveawayRepository(session)
+            >>> repo = GiveawayRepository(session, account_id=1)
         """
         super().__init__(Giveaway, session)
+        self.account_id = account_id
+
+    def _account_filter(self):
+        """Return account_id filter condition, or None if no scoping."""
+        if self.account_id is not None:
+            return self.model.account_id == self.account_id
+        return None
+
+    def _apply_account_filter(self, query):
+        """Apply account filter to a query if account_id is set."""
+        f = self._account_filter()
+        if f is not None:
+            query = query.where(f)
+        return query
 
     async def get_all(
         self, limit: Optional[int] = None, offset: int = 0
@@ -65,6 +81,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> all_giveaways = await repo.get_all(limit=20, offset=0)
         """
         query = select(self.model).order_by(self.model.discovered_at.desc())
+        query = self._apply_account_filter(query)
 
         if offset > 0:
             query = query.offset(offset)
@@ -77,10 +94,10 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
     async def get_by_code(self, code: str) -> Optional[Giveaway]:
         """
-        Get giveaway by SteamGifts code.
+        Get giveaway by SteamGifts code (scoped to account if account_id is set).
 
         Args:
-            code: Unique SteamGifts giveaway code (e.g., "AbCd1")
+            code: SteamGifts giveaway code (e.g., "AbCd1")
 
         Returns:
             Giveaway if found, None otherwise
@@ -91,6 +108,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             'Portal 2'
         """
         query = select(self.model).where(self.model.code == code)
+        query = self._apply_account_filter(query)
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
@@ -126,6 +144,11 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             self.model.end_time > now,
             self.model.is_hidden == False,  # noqa: E712
         ]
+
+        # Account filter
+        f = self._account_filter()
+        if f is not None:
+            conditions.append(f)
 
         # Add safety filter
         if is_safe is not None:
@@ -211,6 +234,11 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             self.model.is_entered == False,  # noqa: E712
             self.model.price >= min_price,
         ]
+
+        # Account filter
+        f = self._account_filter()
+        if f is not None:
+            conditions.append(f)
 
         if max_price is not None:
             conditions.append(self.model.price <= max_price)
@@ -314,6 +342,10 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
         conditions = [self.model.is_entered == True]  # noqa: E712
 
+        f = self._account_filter()
+        if f is not None:
+            conditions.append(f)
+
         if active_only:
             # Only include giveaways that haven't expired
             conditions.append(self.model.end_time.isnot(None))
@@ -348,13 +380,17 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> wishlist = await repo.get_wishlist(limit=20)
         """
         now = datetime.utcnow()
+        conditions = [
+            self.model.is_wishlist == True,  # noqa: E712
+            self.model.is_hidden == False,  # noqa: E712
+            (self.model.end_time == None) | (self.model.end_time > now),  # noqa: E711
+        ]
+        f = self._account_filter()
+        if f is not None:
+            conditions.append(f)
         query = (
             select(self.model)
-            .where(
-                self.model.is_wishlist == True,  # noqa: E712
-                self.model.is_hidden == False,  # noqa: E712
-                (self.model.end_time == None) | (self.model.end_time > now),  # noqa: E711
-            )
+            .where(and_(*conditions))
             .order_by(self.model.end_time.asc())
         )
 
@@ -385,8 +421,9 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         query = (
             select(self.model)
             .where(self.model.is_won == True)  # noqa: E712
-            .order_by(self.model.won_at.desc())
         )
+        query = self._apply_account_filter(query)
+        query = query.order_by(self.model.won_at.desc())
 
         if offset:
             query = query.offset(offset)
@@ -729,6 +766,11 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
         now = datetime.utcnow()
 
+        conditions = [self.model.discovered_at >= since]
+        f = self._account_filter()
+        if f is not None:
+            conditions.append(f)
+
         query = select(
             func.count().label("total"),
             func.sum(
@@ -753,7 +795,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             func.sum(
                 case((self.model.is_won == True, 1), else_=0)  # noqa: E712
             ).label("wins"),
-        ).where(self.model.discovered_at >= since)
+        ).where(and_(*conditions))
 
         result = await self.session.execute(query)
         row = result.one()
@@ -776,21 +818,19 @@ class GiveawayRepository(BaseRepository[Giveaway]):
     ) -> Giveaway:
         """
         Create new giveaway or update existing by code (upsert).
+        When account_id is set on this repository, it's scoped to that account.
 
         Args:
-            code: Unique SteamGifts code
+            code: SteamGifts code
             **kwargs: Giveaway fields to set
 
         Returns:
             Created or updated giveaway
-
-        Example:
-            >>> giveaway = await repo.create_or_update_by_code(
-            ...     code="AbCd1",
-            ...     game_name="Portal 2",
-            ...     price=50
-            ... )
         """
+        # Ensure account_id is included in create/find
+        if self.account_id is not None:
+            kwargs.setdefault("account_id", self.account_id)
+
         existing = await self.get_by_code(code)
 
         if existing:
@@ -863,17 +903,20 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         """
         now = datetime.utcnow()
 
+        conditions = [
+            self.model.end_time.isnot(None),
+            self.model.end_time > now,
+            self.model.is_hidden == False,  # noqa: E712
+            self.model.is_entered == False,  # noqa: E712
+            self.model.is_safe.is_(None),  # Not yet checked
+        ]
+        f = self._account_filter()
+        if f is not None:
+            conditions.append(f)
+
         query = (
             select(self.model)
-            .where(
-                and_(
-                    self.model.end_time.isnot(None),
-                    self.model.end_time > now,
-                    self.model.is_hidden == False,  # noqa: E712
-                    self.model.is_entered == False,  # noqa: E712
-                    self.model.is_safe.is_(None),  # Not yet checked
-                )
-            )
+            .where(and_(*conditions))
             .order_by(self.model.end_time.asc())  # Prioritize soon-expiring
             .limit(limit)
         )

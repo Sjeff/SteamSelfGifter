@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import type { DashboardData, EntryStats, GiveawayStats, GameStats } from '@/types';
+import { useAccountStore } from '@/stores/accountStore';
 
 /**
  * Query keys for analytics
@@ -26,10 +27,13 @@ export interface TimeRangeFilter {
  * Fetch dashboard overview data
  */
 export function useDashboard() {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+
   return useQuery({
-    queryKey: analyticsKeys.dashboard,
+    queryKey: [...analyticsKeys.dashboard, selectedAccountId],
     queryFn: async () => {
-      const response = await api.get<DashboardData>('/api/v1/analytics/dashboard');
+      const params = selectedAccountId ? `?account_id=${selectedAccountId}` : '';
+      const response = await api.get<DashboardData>(`/api/v1/analytics/dashboard${params}`);
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch dashboard data');
       }
@@ -55,8 +59,10 @@ interface EntrySummaryResponse {
  * Fetch entry statistics
  */
 export function useEntryStats(timeRange: TimeRangeFilter = {}) {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+
   return useQuery({
-    queryKey: [...analyticsKeys.entries, timeRange],
+    queryKey: [...analyticsKeys.entries, timeRange, selectedAccountId],
     queryFn: async () => {
       const params = new URLSearchParams();
 
@@ -68,6 +74,9 @@ export function useEntryStats(timeRange: TimeRangeFilter = {}) {
       }
       if (timeRange.to_date) {
         params.set('to_date', timeRange.to_date);
+      }
+      if (selectedAccountId) {
+        params.set('account_id', String(selectedAccountId));
       }
 
       const queryString = params.toString();
@@ -106,8 +115,10 @@ interface GiveawaySummaryResponse {
  * Fetch giveaway statistics
  */
 export function useGiveawayStats(timeRange: TimeRangeFilter = {}) {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+
   return useQuery({
-    queryKey: [...analyticsKeys.giveaways, timeRange],
+    queryKey: [...analyticsKeys.giveaways, timeRange, selectedAccountId],
     queryFn: async () => {
       const params = new URLSearchParams();
 
@@ -119,6 +130,9 @@ export function useGiveawayStats(timeRange: TimeRangeFilter = {}) {
       }
       if (timeRange.to_date) {
         params.set('to_date', timeRange.to_date);
+      }
+      if (selectedAccountId) {
+        params.set('account_id', String(selectedAccountId));
       }
 
       const queryString = params.toString();
@@ -171,11 +185,15 @@ export interface TrendDataPoint {
  * Fetch entry trends over time
  */
 export function useEntryTrends(period: 'week' | 'month' | 'year' = 'month') {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+
   return useQuery({
-    queryKey: [...analyticsKeys.entries, 'trends', period],
+    queryKey: [...analyticsKeys.entries, 'trends', period, selectedAccountId],
     queryFn: async () => {
+      const params = new URLSearchParams({ period });
+      if (selectedAccountId) params.set('account_id', String(selectedAccountId));
       const response = await api.get<TrendDataPoint[]>(
-        `/api/v1/analytics/entries/trends?period=${period}`
+        `/api/v1/analytics/entries/trends?${params.toString()}`
       );
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch entry trends');

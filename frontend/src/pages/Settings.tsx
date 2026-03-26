@@ -1,28 +1,26 @@
 import { useState, useEffect } from 'react';
-import { Save, TestTube, AlertCircle, Eye, EyeOff, HelpCircle, ExternalLink } from 'lucide-react';
+import { Save, AlertCircle } from 'lucide-react';
 import { Card, Button, Input, Toggle, Loading } from '@/components/common';
-import { useSettings, useUpdateSettings, useTestSession } from '@/hooks';
+import { useSettings, useUpdateSettings } from '@/hooks';
 import { showSuccess, showError } from '@/stores/uiStore';
 import type { Settings as SettingsType } from '@/types';
 
 /**
  * Settings page
- * Configure credentials, DLC settings, and auto-join rules
+ * Configure DLC settings, auto-join rules, and application-level defaults.
+ * SteamGifts credentials (PHPSESSID) are managed per-account on the Accounts page.
  */
 export function Settings() {
   const { data: settings, isLoading, error } = useSettings();
   const updateSettings = useUpdateSettings();
-  const testSession = useTestSession();
 
   const [formData, setFormData] = useState<Partial<SettingsType>>({});
   const [hasChanges, setHasChanges] = useState(false);
-  const [showPhpsessid, setShowPhpsessid] = useState(false);
 
   // Initialize form when settings load
   useEffect(() => {
     if (settings) {
       setFormData({
-        phpsessid: settings.phpsessid ?? '',
         user_agent: settings.user_agent,
         dlc_enabled: settings.dlc_enabled,
         safety_check_enabled: settings.safety_check_enabled,
@@ -57,19 +55,6 @@ export function Settings() {
       setHasChanges(false);
     } catch (err) {
       showError(err instanceof Error ? err.message : 'Failed to save settings');
-    }
-  };
-
-  const handleTestSession = async () => {
-    try {
-      const result = await testSession.mutateAsync();
-      if (result.valid) {
-        showSuccess(`Session valid! User: ${result.username}, Points: ${result.points}`);
-      } else {
-        showError(result.error || 'Session is invalid. Please update your PHPSESSID.');
-      }
-    } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to test session');
     }
   };
 
@@ -110,78 +95,14 @@ export function Settings() {
         </Button>
       </div>
 
-      {/* First-time Setup Guide */}
-      {!settings?.phpsessid && (
-        <Card>
-          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 mb-4">
-            <div className="flex items-start gap-3">
-              <HelpCircle className="text-blue-500 shrink-0 mt-0.5" size={20} />
-              <div>
-                <h3 className="font-semibold text-blue-800 dark:text-blue-200 mb-2">
-                  Getting Started
-                </h3>
-                <p className="text-sm text-blue-700 dark:text-blue-300 mb-3">
-                  To use SteamSelfGifter, you need to provide your SteamGifts session cookie (PHPSESSID).
-                  Follow these steps:
-                </p>
-                <ol className="text-sm text-blue-700 dark:text-blue-300 list-decimal list-inside space-y-2">
-                  <li>
-                    <a
-                      href="https://www.steamgifts.com"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="underline hover:text-blue-800 dark:hover:text-blue-100 inline-flex items-center gap-1"
-                    >
-                      Log in to SteamGifts.com <ExternalLink size={12} />
-                    </a>
-                  </li>
-                  <li>Open your browser's Developer Tools (F12 or right-click → Inspect)</li>
-                  <li>Go to the <strong>Application</strong> tab (Chrome) or <strong>Storage</strong> tab (Firefox)</li>
-                  <li>Find <strong>Cookies</strong> → <strong>https://www.steamgifts.com</strong></li>
-                  <li>Copy the value of the <strong>PHPSESSID</strong> cookie</li>
-                  <li>Paste it in the field below, click <strong>Save Changes</strong>, then <strong>Test Session</strong> to verify</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Credentials Section */}
-      <Card title="SteamGifts Credentials">
-        <div className="space-y-4">
-          <div className="relative">
-            <Input
-              label="PHPSESSID"
-              type={showPhpsessid ? 'text' : 'password'}
-              value={formData.phpsessid ?? ''}
-              onChange={(e) => handleChange('phpsessid', e.target.value)}
-              helperText="Your SteamGifts session cookie. Get this from browser DevTools."
-            />
-            <button
-              type="button"
-              onClick={() => setShowPhpsessid(!showPhpsessid)}
-              className="absolute right-3 top-8 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              aria-label={showPhpsessid ? 'Hide PHPSESSID' : 'Show PHPSESSID'}
-            >
-              {showPhpsessid ? <EyeOff size={20} /> : <Eye size={20} />}
-            </button>
-          </div>
-          <Input
-            label="User Agent"
-            value={formData.user_agent ?? ''}
-            onChange={(e) => handleChange('user_agent', e.target.value)}
-            helperText="Browser user agent string for requests."
-          />
-          <Button
-            onClick={handleTestSession}
-            isLoading={testSession.isPending}
-            variant="secondary"
-            icon={TestTube}
-          >
-            Test Session
-          </Button>
-        </div>
+      {/* Application Settings */}
+      <Card title="Application Settings">
+        <Input
+          label="Default User Agent"
+          value={formData.user_agent ?? ''}
+          onChange={(e) => handleChange('user_agent', e.target.value)}
+          helperText="Default browser user agent string for HTTP requests. Can be overridden per account."
+        />
       </Card>
 
       {/* Automation Section */}

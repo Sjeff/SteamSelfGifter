@@ -3,6 +3,7 @@
 from datetime import datetime
 from sqlalchemy import String, Integer, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
+from typing import Optional
 
 from models.base import Base, TimestampMixin
 
@@ -78,6 +79,13 @@ class Entry(Base, TimestampMixin):
         nullable=False,
         index=True,
         comment="Foreign key to giveaway",
+    )
+    account_id: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        ForeignKey("accounts.id"),
+        nullable=True,
+        index=True,
+        comment="Foreign key to account",
     )
 
     # ==================== Entry Details ====================

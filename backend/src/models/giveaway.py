@@ -76,15 +76,23 @@ class Giveaway(Base, TimestampMixin):
     # ==================== Unique Identifiers ====================
     code: Mapped[str] = mapped_column(
         String,
-        unique=True,
         nullable=False,
         index=True,
-        comment="Unique SteamGifts giveaway code",
+        comment="SteamGifts giveaway code (unique per account)",
     )
     url: Mapped[str] = mapped_column(
         String,
         nullable=False,
         comment="Full giveaway URL",
+    )
+
+    # ==================== Account Reference ====================
+    account_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("accounts.id"),
+        nullable=True,
+        index=True,
+        comment="Account that discovered this giveaway",
     )
 
     # ==================== Game Reference ====================

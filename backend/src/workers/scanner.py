@@ -21,7 +21,7 @@ from core.events import event_manager
 logger = structlog.get_logger()
 
 
-async def scan_giveaways() -> Dict[str, Any]:
+async def scan_giveaways(account_id: int = None) -> Dict[str, Any]:
     """
     Scan SteamGifts for giveaways and sync to database.
 
@@ -30,6 +30,9 @@ async def scan_giveaways() -> Dict[str, Any]:
     2. Scans multiple pages from SteamGifts
     3. Syncs new/updated giveaways to database
     4. Emits events for real-time updates
+
+    Args:
+        account_id: Account to scan for. When None, uses the default account.
 
     Returns:
         Dictionary with scan results:
@@ -44,12 +47,13 @@ async def scan_giveaways() -> Dict[str, Any]:
     """
     start_time = datetime.now(UTC)
 
-    logger.info("giveaway_scan_started")
+    logger.info("giveaway_scan_started", account_id=account_id)
 
     async with AsyncSessionLocal() as session:
         # Check settings
-        settings_service = SettingsService(session)
+        settings_service = SettingsService(session, account_id=account_id)
         settings = await settings_service.get_settings()
+        account_id = settings.id
 
         # Skip if not authenticated
         if not settings.phpsessid:
@@ -81,8 +85,9 @@ async def scan_giveaways() -> Dict[str, Any]:
             session=session,
             steamgifts_client=sg_client,
             game_service=game_service,
+            account_id=account_id,
         )
-        notification_service = NotificationService(session=session)
+        notification_service = NotificationService(session=session, account_id=account_id)
 
         try:
             # Log scan start
@@ -140,11 +145,14 @@ async def scan_giveaways() -> Dict[str, Any]:
             await steam_client.close()
 
 
-async def quick_scan() -> Dict[str, Any]:
+async def quick_scan(account_id: int = None) -> Dict[str, Any]:
     """
     Perform a quick scan (single page only).
 
     Useful for immediate updates without full scan overhead.
+
+    Args:
+        account_id: Account to scan for. When None, uses the default account.
 
     Returns:
         Dictionary with scan results
@@ -152,11 +160,12 @@ async def quick_scan() -> Dict[str, Any]:
     Example:
         >>> results = await quick_scan()
     """
-    logger.info("quick_scan_started")
+    logger.info("quick_scan_started", account_id=account_id)
 
     async with AsyncSessionLocal() as session:
-        settings_service = SettingsService(session)
+        settings_service = SettingsService(session, account_id=account_id)
         settings = await settings_service.get_settings()
+        account_id = settings.id
 
         if not settings.phpsessid:
             return {
@@ -182,6 +191,7 @@ async def quick_scan() -> Dict[str, Any]:
             session=session,
             steamgifts_client=sg_client,
             game_service=game_service,
+            account_id=account_id,
         )
 
         try:

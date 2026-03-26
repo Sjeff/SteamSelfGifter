@@ -1,7 +1,7 @@
 """Repository for ActivityLog model."""
 
 from typing import Optional
-from sqlalchemy import select, desc
+from sqlalchemy import select, desc, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.activity_log import ActivityLog
@@ -24,17 +24,16 @@ class ActivityLogRepository:
         >>> log = await repo.create(level="info", event_type="scan", message="Started scan")
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, account_id: Optional[int] = None):
         """
         Initialize repository with database session.
 
         Args:
             session: SQLAlchemy async session
-
-        Example:
-            >>> repo = ActivityLogRepository(session)
+            account_id: When set, queries and creates are scoped to this account.
         """
         self.session = session
+        self.account_id = account_id
 
     async def create(
         self,
@@ -68,6 +67,7 @@ class ActivityLogRepository:
             event_type=event_type,
             message=message,
             details=details,
+            account_id=self.account_id,
         )
         self.session.add(log)
         await self.session.flush()
@@ -91,43 +91,29 @@ class ActivityLogRepository:
         )
         return result.scalar_one_or_none()
 
+    def _account_conditions(self, extra=None):
+        """Build WHERE conditions including optional account filter."""
+        conditions = list(extra or [])
+        if self.account_id is not None:
+            conditions.append(ActivityLog.account_id == self.account_id)
+        return conditions
+
     async def get_recent(self, limit: int = 100) -> list[ActivityLog]:
-        """
-        Get recent activity logs.
-
-        Args:
-            limit: Maximum number of logs to return (default: 100)
-
-        Returns:
-            List of ActivityLog objects (newest first)
-
-        Example:
-            >>> logs = await repo.get_recent(limit=50)
-        """
-        result = await self.session.execute(
-            select(ActivityLog)
-            .order_by(desc(ActivityLog.created_at))
-            .limit(limit)
-        )
+        """Get recent activity logs (scoped to account if set)."""
+        conditions = self._account_conditions()
+        query = select(ActivityLog)
+        if conditions:
+            query = query.where(and_(*conditions))
+        query = query.order_by(desc(ActivityLog.created_at)).limit(limit)
+        result = await self.session.execute(query)
         return list(result.scalars().all())
 
     async def get_by_level(self, level: str, limit: int = 100) -> list[ActivityLog]:
-        """
-        Get activity logs by severity level.
-
-        Args:
-            level: Log severity ("info", "warning", "error")
-            limit: Maximum number of logs to return (default: 100)
-
-        Returns:
-            List of ActivityLog objects matching level (newest first)
-
-        Example:
-            >>> errors = await repo.get_by_level("error", limit=20)
-        """
+        """Get activity logs by severity level (scoped to account if set)."""
+        conditions = self._account_conditions([ActivityLog.level == level])
         result = await self.session.execute(
             select(ActivityLog)
-            .where(ActivityLog.level == level)
+            .where(and_(*conditions))
             .order_by(desc(ActivityLog.created_at))
             .limit(limit)
         )
@@ -136,58 +122,32 @@ class ActivityLogRepository:
     async def get_by_event_type(
         self, event_type: str, limit: int = 100
     ) -> list[ActivityLog]:
-        """
-        Get activity logs by event type.
-
-        Args:
-            event_type: Event category ("scan", "entry", "error", "config", etc.)
-            limit: Maximum number of logs to return (default: 100)
-
-        Returns:
-            List of ActivityLog objects matching event type (newest first)
-
-        Example:
-            >>> scan_logs = await repo.get_by_event_type("scan", limit=50)
-        """
+        """Get activity logs by event type (scoped to account if set)."""
+        conditions = self._account_conditions([ActivityLog.event_type == event_type])
         result = await self.session.execute(
             select(ActivityLog)
-            .where(ActivityLog.event_type == event_type)
+            .where(and_(*conditions))
             .order_by(desc(ActivityLog.created_at))
             .limit(limit)
         )
         return list(result.scalars().all())
 
     async def count_by_level(self, level: str) -> int:
-        """
-        Count activity logs by severity level.
-
-        Args:
-            level: Log severity ("info", "warning", "error")
-
-        Returns:
-            Count of logs matching level
-
-        Example:
-            >>> error_count = await repo.count_by_level("error")
-        """
+        """Count activity logs by severity level (scoped to account if set)."""
+        conditions = self._account_conditions([ActivityLog.level == level])
         result = await self.session.execute(
-            select(ActivityLog).where(ActivityLog.level == level)
+            select(ActivityLog).where(and_(*conditions))
         )
         return len(list(result.scalars().all()))
 
     async def get_all(self) -> list[ActivityLog]:
-        """
-        Get all activity logs.
-
-        Returns:
-            List of all ActivityLog objects (newest first)
-
-        Example:
-            >>> all_logs = await repo.get_all()
-        """
-        result = await self.session.execute(
-            select(ActivityLog).order_by(desc(ActivityLog.created_at))
-        )
+        """Get all activity logs (scoped to account if set)."""
+        conditions = self._account_conditions()
+        query = select(ActivityLog)
+        if conditions:
+            query = query.where(and_(*conditions))
+        query = query.order_by(desc(ActivityLog.created_at))
+        result = await self.session.execute(query)
         return list(result.scalars().all())
 
     async def delete_all(self) -> int:

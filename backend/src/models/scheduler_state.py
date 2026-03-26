@@ -1,7 +1,7 @@
 """Scheduler state and statistics model."""
 
 from datetime import datetime
-from sqlalchemy import Integer, DateTime
+from sqlalchemy import Integer, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.base import Base, TimestampMixin
@@ -53,12 +53,20 @@ class SchedulerState(Base, TimestampMixin):
     __tablename__ = "scheduler_state"
 
     # ==================== Primary Key ====================
-    # Singleton - always id=1
     id: Mapped[int] = mapped_column(
         Integer,
         primary_key=True,
-        default=1,
-        comment="Singleton ID (always 1)",
+        autoincrement=True,
+        comment="Auto-increment primary key",
+    )
+
+    # ==================== Account Reference ====================
+    account_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("accounts.id"),
+        nullable=True,
+        unique=True,
+        comment="Account this scheduler state belongs to (one per account)",
     )
 
     # ==================== Timing Information ====================

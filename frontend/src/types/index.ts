@@ -288,3 +288,44 @@ export interface WebSocketEvent<T = unknown> {
   data: T;
   timestamp: string;
 }
+
+// Account model (full)
+export interface Account {
+  id: number;
+  name: string;
+  is_active: boolean;
+  is_default: boolean;
+  phpsessid: string | null;
+  user_agent: string;
+  xsrf_token: string | null;
+  dlc_enabled: boolean;
+  safety_check_enabled: boolean;
+  auto_hide_unsafe: boolean;
+  autojoin_enabled: boolean;
+  autojoin_start_at: number;
+  autojoin_stop_at: number;
+  autojoin_min_price: number;
+  autojoin_min_score: number;
+  autojoin_min_reviews: number;
+  autojoin_max_game_age: number | null;
+  scan_interval_minutes: number;
+  max_entries_per_cycle: number | null;
+  automation_enabled: boolean;
+  max_scan_pages: number;
+  entry_delay_min: number;
+  entry_delay_max: number;
+  last_synced_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Account list item (lightweight)
+export interface AccountListItem {
+  id: number;
+  name: string;
+  is_active: boolean;
+  is_default: boolean;
+  automation_enabled: boolean;
+  autojoin_enabled: boolean;
+  has_credentials: boolean;
+}

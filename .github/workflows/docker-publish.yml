@@ -2,14 +2,14 @@ name: Build and Publish Docker Image
 
 on:
   push:
-    branches: [master]
+    branches: [main]
     tags: ['v*.*.*']
   pull_request:
-    branches: [master]
+    branches: [main]
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: ${{ github.repository_owner }}/steamselfgifter
 
 jobs:
   build-and-push:

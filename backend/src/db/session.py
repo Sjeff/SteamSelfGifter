@@ -113,9 +113,9 @@ async def init_db() -> None:
                 conn.close()
 
                 if has_tables and not alembic_has_entries:
-                    # Existing database without alembic tracking (or empty alembic_version) - stamp it
-                    command.stamp(alembic_cfg, "head")
-                    return  # No upgrade needed, already at head
+                    # Existing database without alembic tracking — stamp at the initial
+                    # schema revision so upgrade head will apply all subsequent migrations.
+                    command.stamp(alembic_cfg, "93fe35470006")
 
         # Run migrations
         command.upgrade(alembic_cfg, "head")

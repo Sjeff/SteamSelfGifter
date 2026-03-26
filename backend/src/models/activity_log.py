@@ -1,7 +1,7 @@
 """Activity and event logging model."""
 
 from datetime import datetime
-from sqlalchemy import String, Integer, DateTime, Text
+from sqlalchemy import String, Integer, DateTime, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.base import Base
@@ -70,6 +70,15 @@ class ActivityLog(Base):
         primary_key=True,
         autoincrement=True,
         comment="Auto-increment primary key",
+    )
+
+    # ==================== Account Reference ====================
+    account_id: Mapped[int | None] = mapped_column(
+        Integer,
+        ForeignKey("accounts.id"),
+        nullable=True,
+        index=True,
+        comment="Account this log belongs to",
     )
 
     # ==================== Log Metadata ====================

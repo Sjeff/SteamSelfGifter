@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import type { Giveaway, SafetyCheckResult } from '@/types';
+import { useAccountStore } from '@/stores/accountStore';
 
 /**
  * Query keys for giveaways
@@ -26,6 +27,7 @@ export interface GiveawayFilters {
   limit?: number;
   minScore?: number; // Minimum review score (0-10)
   safetyFilter?: 'all' | 'safe' | 'unsafe'; // Filter by safety status
+  accountId?: number; // Account scope (defaults to selected account from store)
 }
 
 /**
@@ -51,10 +53,14 @@ interface GiveawaysApiResponse {
  * Fetch giveaways with optional filters
  */
 export function useGiveaways(filters: GiveawayFilters = {}) {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+  const effectiveAccountId = filters.accountId ?? selectedAccountId;
+
   return useQuery({
-    queryKey: giveawayKeys.list(filters),
+    queryKey: [...giveawayKeys.list(filters), effectiveAccountId],
     queryFn: async () => {
       const params = new URLSearchParams();
+      if (effectiveAccountId) params.set('account_id', String(effectiveAccountId));
 
       // Determine which endpoint to use based on status filter
       let endpointPath = '/api/v1/giveaways';
@@ -126,10 +132,14 @@ export function useGiveaways(filters: GiveawayFilters = {}) {
  * Fetch giveaways with infinite scrolling
  */
 export function useInfiniteGiveaways(filters: Omit<GiveawayFilters, 'page'> = {}) {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+  const effectiveAccountId = filters.accountId ?? selectedAccountId;
+
   return useInfiniteQuery({
-    queryKey: [...giveawayKeys.lists(), 'infinite', filters],
+    queryKey: [...giveawayKeys.lists(), 'infinite', filters, effectiveAccountId],
     queryFn: async ({ pageParam = 0 }) => {
       const params = new URLSearchParams();
+      if (effectiveAccountId) params.set('account_id', String(effectiveAccountId));
 
       // Determine which endpoint to use based on status filter
       let endpointPath = '/api/v1/giveaways';

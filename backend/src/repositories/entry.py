@@ -35,17 +35,32 @@ class EntryRepository(BaseRepository[Entry]):
         ...     stats = await repo.get_stats()
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, account_id: Optional[int] = None):
         """
         Initialize EntryRepository with database session.
 
         Args:
             session: The async database session
+            account_id: Optional account ID to scope all queries
 
         Example:
-            >>> repo = EntryRepository(session)
+            >>> repo = EntryRepository(session, account_id=1)
         """
         super().__init__(Entry, session)
+        self.account_id = account_id
+
+    def _account_filter(self):
+        """Return account filter condition if account_id is set."""
+        if self.account_id is not None:
+            return self.model.account_id == self.account_id
+        return None
+
+    def _apply_account_filter(self, query):
+        """Apply account filter to a query if account_id is set."""
+        f = self._account_filter()
+        if f is not None:
+            return query.where(f)
+        return query
 
     async def get_by_giveaway(self, giveaway_id: int) -> Optional[Entry]:
         """
@@ -83,7 +98,7 @@ class EntryRepository(BaseRepository[Entry]):
             >>> # Get last 10 entries
             >>> recent = await repo.get_recent(limit=10)
         """
-        query = select(self.model).order_by(self.model.created_at.desc())
+        query = self._apply_account_filter(select(self.model)).order_by(self.model.created_at.desc())
 
         if limit:
             query = query.limit(limit)
@@ -112,7 +127,7 @@ class EntryRepository(BaseRepository[Entry]):
             5
         """
         query = (
-            select(self.model)
+            self._apply_account_filter(select(self.model))
             .where(self.model.status == status)
             .order_by(self.model.created_at.desc())
         )
@@ -185,7 +200,7 @@ class EntryRepository(BaseRepository[Entry]):
             >>> manual_entries = await repo.get_by_entry_type("manual")
         """
         query = (
-            select(self.model)
+            self._apply_account_filter(select(self.model))
             .where(self.model.entry_type == entry_type)
             .order_by(self.model.created_at.desc())
         )
@@ -250,7 +265,9 @@ class EntryRepository(BaseRepository[Entry]):
             >>> success_count = await repo.count_by_status("success")
             >>> print(f"Successful entries: {success_count}")
         """
-        query = select(func.count()).where(self.model.status == status)
+        query = self._apply_account_filter(
+            select(func.count()).where(self.model.status == status)
+        )
         result = await self.session.execute(query)
         return result.scalar() or 0
 
@@ -291,7 +308,9 @@ class EntryRepository(BaseRepository[Entry]):
         Example:
             >>> auto_count = await repo.count_by_type("auto")
         """
-        query = select(func.count()).where(self.model.entry_type == entry_type)
+        query = self._apply_account_filter(
+            select(func.count()).where(self.model.entry_type == entry_type)
+        )
         result = await self.session.execute(query)
         return result.scalar() or 0
 
@@ -306,7 +325,7 @@ class EntryRepository(BaseRepository[Entry]):
             >>> total = await repo.get_total_points_spent()
             >>> print(f"Total points spent: {total}")
         """
-        query = select(func.sum(self.model.points_spent))
+        query = self._apply_account_filter(select(func.sum(self.model.points_spent)))
         result = await self.session.execute(query)
         return result.scalar() or 0
 
@@ -323,8 +342,8 @@ class EntryRepository(BaseRepository[Entry]):
         Example:
             >>> successful_points = await repo.get_total_points_by_status("success")
         """
-        query = select(func.sum(self.model.points_spent)).where(
-            self.model.status == status
+        query = self._apply_account_filter(
+            select(func.sum(self.model.points_spent)).where(self.model.status == status)
         )
         result = await self.session.execute(query)
         return result.scalar() or 0
@@ -417,7 +436,7 @@ class EntryRepository(BaseRepository[Entry]):
         from sqlalchemy import func, case
 
         # Single query to get all counts
-        query = select(
+        base = select(
             func.count().label("total"),
             func.sum(case((self.model.status == "success", 1), else_=0)).label("successful"),
             func.sum(case((self.model.status == "failed", 1), else_=0)).label("failed"),
@@ -429,6 +448,7 @@ class EntryRepository(BaseRepository[Entry]):
             func.sum(case((self.model.entry_type == "auto", 1), else_=0)).label("auto"),
             func.sum(case((self.model.entry_type == "wishlist", 1), else_=0)).label("wishlist"),
         ).where(self.model.created_at >= since)
+        query = self._apply_account_filter(base)
 
         result = await self.session.execute(query)
         row = result.fetchone()
@@ -499,7 +519,7 @@ class EntryRepository(BaseRepository[Entry]):
             >>> recent = await repo.get_entries_since(one_hour_ago)
         """
         query = (
-            select(self.model)
+            self._apply_account_filter(select(self.model))
             .where(self.model.created_at >= since)
             .order_by(self.model.created_at.desc())
         )

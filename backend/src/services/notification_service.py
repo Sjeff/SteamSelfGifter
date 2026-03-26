@@ -45,18 +45,17 @@ class NotificationService:
         ...     # API layer would then send 'event' via WebSocket
     """
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, account_id: Optional[int] = None):
         """
         Initialize NotificationService.
 
         Args:
             session: Database session
-
-        Example:
-            >>> service = NotificationService(session)
+            account_id: When set, log entries are scoped to this account.
         """
         self.session = session
-        self.repo = ActivityLogRepository(session)
+        self.account_id = account_id
+        self.repo = ActivityLogRepository(session, account_id=account_id)
 
     async def log_activity(
         self,

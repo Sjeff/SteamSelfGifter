@@ -20,7 +20,7 @@ from utils.steam_client import SteamClient
 logger = structlog.get_logger()
 
 
-async def safety_check_cycle() -> Dict[str, Any]:
+async def safety_check_cycle(account_id: int = None) -> Dict[str, Any]:
     """
     Run a safety check on one unchecked eligible giveaway.
 
@@ -50,25 +50,26 @@ async def safety_check_cycle() -> Dict[str, Any]:
 
     async with AsyncSessionLocal() as session:
         # Check settings
-        settings_service = SettingsService(session)
+        settings_service = SettingsService(session, account_id=account_id)
         settings = await settings_service.get_settings()
+        account_id = settings.id  # Resolve to concrete account ID
 
         # Skip if not authenticated
         if not settings.phpsessid:
-            logger.debug("safety_check_skipped", reason="not_authenticated")
+            logger.debug("safety_check_skipped", reason="not_authenticated", account_id=account_id)
             results["skipped"] = True
             results["reason"] = "not_authenticated"
             return results
 
         # Skip if safety check is disabled
         if not settings.safety_check_enabled:
-            logger.debug("safety_check_skipped", reason="disabled")
+            logger.debug("safety_check_skipped", reason="disabled", account_id=account_id)
             results["skipped"] = True
             results["reason"] = "safety_check_disabled"
             return results
 
-        # Get one unchecked giveaway
-        giveaway_repo = GiveawayRepository(session)
+        # Get one unchecked giveaway (scoped to this account)
+        giveaway_repo = GiveawayRepository(session, account_id=account_id)
         unchecked = await giveaway_repo.get_unchecked_eligible(limit=1)
 
         if not unchecked:
@@ -90,12 +91,13 @@ async def safety_check_cycle() -> Dict[str, Any]:
         await steam_client.start()
 
         try:
-            # Create service
+            # Create service (scoped to account)
             game_service = GameService(session=session, steam_client=steam_client)
             giveaway_service = GiveawayService(
                 session=session,
                 steamgifts_client=sg_client,
                 game_service=game_service,
+                account_id=account_id,
             )
 
             # Run safety check
@@ -103,14 +105,15 @@ async def safety_check_cycle() -> Dict[str, Any]:
                 "safety_check_running",
                 giveaway_code=giveaway.code,
                 game_name=giveaway.game_name,
+                account_id=account_id,
             )
 
             safety_result = await giveaway_service.check_giveaway_safety(giveaway.code)
 
             results["checked"] = 1
 
-            # Create notification service for logging
-            notification_service = NotificationService(session=session)
+            # Create notification service for logging (scoped to account)
+            notification_service = NotificationService(session=session, account_id=account_id)
 
             if safety_result["is_safe"]:
                 results["safe"] = 1
