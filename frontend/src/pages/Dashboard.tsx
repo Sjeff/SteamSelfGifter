@@ -557,7 +557,10 @@ function JobCountdown({ job }: JobCountdownProps) {
   }, [job.next_run]);
 
   const jobLabel = job.name === 'scan_giveaways' ? 'Next scan' :
-                   job.name === 'process_giveaways' ? 'Next process' : job.name;
+                   job.name === 'process_giveaways' ? 'Next process' :
+                   job.name === 'Automation cycle' ? 'Next scan' :
+                   job.name === 'Safety check' ? 'Safety check' :
+                   job.name === 'Win check' ? 'Win check' : job.name;
 
   return (
     <span className="flex items-center gap-1">

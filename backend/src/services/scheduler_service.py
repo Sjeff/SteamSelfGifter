@@ -409,6 +409,7 @@ class SchedulerService:
             func=self._win_check_callback,
             job_id=self._win_check_job_id,
             run_date=run_date,
+            name="Win check",
         )
 
         logger.info(

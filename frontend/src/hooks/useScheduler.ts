@@ -12,13 +12,18 @@ export const schedulerKeys = {
 };
 
 /**
- * Fetch global scheduler status (whether the scheduler process is running)
+ * Fetch scheduler status, scoped to the selected account when available
  */
 export function useSchedulerStatus() {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+
   return useQuery({
-    queryKey: schedulerKeys.status,
+    queryKey: [...schedulerKeys.status, selectedAccountId],
     queryFn: async () => {
-      const response = await api.get<SchedulerStatus>('/api/v1/scheduler/status');
+      const endpoint = selectedAccountId
+        ? `/api/v1/accounts/${selectedAccountId}/scheduler/status`
+        : '/api/v1/scheduler/status';
+      const response = await api.get<SchedulerStatus>(endpoint);
       if (!response.success) {
         throw new Error(response.error || 'Failed to fetch scheduler status');
       }

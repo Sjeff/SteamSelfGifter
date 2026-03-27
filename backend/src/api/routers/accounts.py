@@ -153,7 +153,7 @@ async def get_account_scheduler_status(account_id: int, account_service: Account
     except ResourceNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
-    account_job_ids = {f"automation_cycle_{account_id}", f"safety_check_{account_id}"}
+    account_job_ids = {f"automation_cycle_{account_id}", f"safety_check_{account_id}", f"win_check_{account_id}"}
     account_jobs = [j for j in scheduler_manager.get_jobs() if j.id in account_job_ids]
 
     job_info = []
@@ -211,6 +211,7 @@ async def start_account_automation(account_id: int, account_service: AccountServ
         job_id=f"automation_cycle_{account_id}",
         minutes=scan_interval,
         start_date=start_date,
+        name="Automation cycle",
     )
 
     if account.safety_check_enabled:
@@ -218,6 +219,7 @@ async def start_account_automation(account_id: int, account_service: AccountServ
             func=partial(safety_check_cycle, account_id=account_id),
             job_id=f"safety_check_{account_id}",
             seconds=45,
+            name="Safety check",
         )
 
     return create_success_response(data={"started": True, "account_id": account_id})

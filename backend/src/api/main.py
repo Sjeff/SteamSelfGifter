@@ -108,6 +108,7 @@ async def lifespan(app: FastAPI):
                         job_id=f"automation_cycle_{account.id}",
                         minutes=scan_interval,
                         start_date=start_date,
+                        name="Automation cycle",
                     )
                     started_count += 1
 
@@ -117,6 +118,7 @@ async def lifespan(app: FastAPI):
                             func=partial(safety_check_cycle, account_id=account.id),
                             job_id=f"safety_check_{account.id}",
                             seconds=45,
+                            name="Safety check",
                         )
                         logger.info("safety_check_job_started", account_id=account.id, interval_seconds=45)
 
