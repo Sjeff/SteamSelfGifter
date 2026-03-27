@@ -212,6 +212,10 @@ All changes in this release were made in collaboration with [Claude](https://cla
 - Fixed play button on the Accounts page not reflecting automation status correctly on the Dashboard
 - Dashboard scheduler status now shows the global scheduler state instead of the selected account's state, so starting automation from the Accounts page is immediately visible on the Dashboard
 
+#### Bug fixes
+
+- Fixed 6 failing unit tests in `test_api_routers_system` after refactoring the logs endpoint to use a direct `NotificationService` instance instead of dependency injection
+
 #### Rate limiting & scan staggering
 
 - Accounts no longer scan simultaneously: each additional account receives a 5-minute start offset (account 1 at T+0, account 2 at T+5 min, account 3 at T+10 min, etc.)

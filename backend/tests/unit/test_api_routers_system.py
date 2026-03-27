@@ -2,7 +2,7 @@
 
 import pytest
 from datetime import datetime
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from api.routers.system import (
     health_check,
@@ -19,8 +19,26 @@ def create_mock_activity_log(log_id: int, level: str, event_type: str, message: 
     log.level = level
     log.event_type = event_type
     log.message = message
+    log.details = None
+    log.account_id = None
     log.created_at = datetime.utcnow()
     return log
+
+
+def make_log_call(mock_notification_service, mock_account_service=None, **kwargs):
+    """Helper to call get_logs with the mocked dependencies."""
+    if mock_account_service is None:
+        mock_account_service = AsyncMock()
+        mock_account_service.list_accounts.return_value = []
+    mock_db = MagicMock()
+    defaults = {"limit": 50, "level": None, "event_type": None}
+    defaults.update(kwargs)
+
+    async def _call():
+        with patch("api.routers.system.NotificationService", return_value=mock_notification_service):
+            return await get_logs(db=mock_db, account_service=mock_account_service, **defaults)
+
+    return _call()
 
 
 @pytest.mark.asyncio
@@ -82,7 +100,7 @@ async def test_get_logs():
     ]
     mock_service.get_recent_logs.return_value = mock_logs
 
-    result = await get_logs(notification_service=mock_service, limit=50, level=None, event_type=None)
+    result = await make_log_call(mock_service)
 
     assert result["success"] is True
     assert "data" in result
@@ -101,24 +119,20 @@ async def test_get_logs_with_level_filter():
     ]
     mock_service.get_logs_by_level.return_value = mock_logs
 
-    result = await get_logs(notification_service=mock_service, limit=50, level="error", event_type=None)
+    result = await make_log_call(mock_service, level="error")
 
     assert result["success"] is True
     assert result["data"]["count"] == 1
-    mock_service.get_logs_by_level.assert_called_once_with(
-        level="error",
-        limit=50,
-    )
+    mock_service.get_logs_by_level.assert_called_once_with(level="error", limit=50)
 
 
 @pytest.mark.asyncio
 async def test_get_logs_with_custom_limit():
     """Test GET /system/logs with custom limit."""
     mock_service = AsyncMock()
-    mock_logs = []
-    mock_service.get_recent_logs.return_value = mock_logs
+    mock_service.get_recent_logs.return_value = []
 
-    result = await get_logs(notification_service=mock_service, limit=100, level=None, event_type=None)
+    result = await make_log_call(mock_service, limit=100)
 
     assert result["success"] is True
     assert result["data"]["limit"] == 100
@@ -131,7 +145,7 @@ async def test_get_logs_empty_result():
     mock_service = AsyncMock()
     mock_service.get_recent_logs.return_value = []
 
-    result = await get_logs(notification_service=mock_service, limit=50, level=None, event_type=None)
+    result = await make_log_call(mock_service)
 
     assert result["success"] is True
     assert result["data"]["count"] == 0
@@ -145,7 +159,7 @@ async def test_get_logs_formats_correctly():
     mock_log = create_mock_activity_log(123, "info", "entry", "Test message")
     mock_service.get_recent_logs.return_value = [mock_log]
 
-    result = await get_logs(notification_service=mock_service, limit=50, level=None, event_type=None)
+    result = await make_log_call(mock_service)
 
     log = result["data"]["logs"][0]
     assert log["id"] == 123
@@ -153,7 +167,6 @@ async def test_get_logs_formats_correctly():
     assert log["event_type"] == "entry"
     assert log["message"] == "Test message"
     assert "created_at" in log
-    # Timestamp should be in ISO format
     datetime.fromisoformat(log["created_at"])
 
 
@@ -165,7 +178,7 @@ async def test_get_logs_handles_null_created_at():
     mock_log.created_at = None
     mock_service.get_recent_logs.return_value = [mock_log]
 
-    result = await get_logs(notification_service=mock_service, limit=50, level=None, event_type=None)
+    result = await make_log_call(mock_service)
 
     log = result["data"]["logs"][0]
     assert log["created_at"] is None
