@@ -348,7 +348,12 @@ function LogEntry({ log }: LogEntryProps) {
                 </p>
               )}
             </div>
-            <div className="flex gap-2 shrink-0">
+            <div className="flex gap-2 shrink-0 flex-wrap justify-end">
+              {log.account_name && (
+                <Badge variant="success" size="sm">
+                  {log.account_name}
+                </Badge>
+              )}
               <Badge variant={config.badge} size="sm">
                 {log.level.toUpperCase()}
               </Badge>

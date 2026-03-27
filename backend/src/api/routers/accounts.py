@@ -196,10 +196,21 @@ async def start_account_automation(account_id: int, account_service: AccountServ
     scheduler_manager.start()
     scan_interval = account.scan_interval_minutes or 30
 
+    # Stagger start times: each additional account gets a 5-minute offset
+    # to prevent simultaneous scans from the same IP.
+    from datetime import datetime, timedelta, UTC
+    running_automation_jobs = [
+        j for j in scheduler_manager.get_jobs()
+        if j.id.startswith("automation_cycle_") and j.id != f"automation_cycle_{account_id}"
+    ]
+    offset_minutes = len(running_automation_jobs) * 5
+    start_date = datetime.now(UTC) + timedelta(minutes=offset_minutes)
+
     scheduler_manager.add_interval_job(
         func=partial(automation_cycle, account_id=account_id),
         job_id=f"automation_cycle_{account_id}",
         minutes=scan_interval,
+        start_date=start_date,
     )
 
     if account.safety_check_enabled:

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/services/api';
 import type { ActivityLog } from '@/types';
-import { useAccountStore } from '@/stores/accountStore';
 
 /**
  * Query keys for logs
@@ -50,14 +49,11 @@ interface LogsApiResponse {
  * Fetch activity logs with optional filters
  */
 export function useLogs(filters: LogFilters = {}) {
-  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
-  const effectiveAccountId = filters.accountId ?? selectedAccountId;
-
   return useQuery({
-    queryKey: [...logKeys.list(filters), effectiveAccountId],
+    queryKey: logKeys.list(filters),
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (effectiveAccountId) params.set('account_id', String(effectiveAccountId));
+      if (filters.accountId) params.set('account_id', String(filters.accountId));
 
       if (filters.level && filters.level !== 'all') {
         params.set('level', filters.level);

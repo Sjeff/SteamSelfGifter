@@ -197,6 +197,8 @@ export interface ActivityLog {
   event_type: 'scan' | 'entry' | 'error' | 'config' | 'scheduler';
   message: string;
   details: string | null;
+  account_id: number | null;
+  account_name: string | null;
   created_at: string;
 }
 

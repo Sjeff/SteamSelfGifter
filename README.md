@@ -103,6 +103,22 @@ Settings are configured **per account** via the Accounts page:
    - Enable safety check for trap detection
    - Scheduler interval and rate limiting
 
+### Multi-account scan interval warning
+
+> **⚠️ Important when using multiple accounts**
+>
+> Each account after the first receives a **5-minute scan start offset** to prevent simultaneous requests from the same IP. With a default scan interval of 30 minutes this works fine for up to 6 accounts. For more accounts, or if you use a shorter scan interval, you must increase the **Scan Interval** setting accordingly:
+>
+> | Accounts | Required scan interval |
+> |----------|------------------------|
+> | 1        | any                    |
+> | 2        | > 5 min                |
+> | 3        | > 10 min               |
+> | 4        | > 15 min               |
+> | 6        | > 25 min               |
+>
+> Rule of thumb: **scan interval > (number of accounts − 1) × 5 minutes**
+
 ### How to get your PHPSESSID
 
 1. Sign in to [SteamGifts](https://www.steamgifts.com)
@@ -179,6 +195,28 @@ alembic upgrade head
 ```
 
 ## Changelog
+
+### v3.0.1
+
+All changes in this release were made in collaboration with [Claude](https://claude.ai) (Anthropic).
+
+#### Activity Logs
+
+- Logs page now shows entries from all accounts in a single combined view — no longer filtered by the selected account
+- Each log entry displays an account badge so you can see which account generated it
+- Switching accounts in the sidebar no longer affects the logs view
+- All log operations (view, clear, export) are now permanently account-agnostic on the backend
+
+#### Automation
+
+- Fixed play button on the Accounts page not reflecting automation status correctly on the Dashboard
+- Dashboard scheduler status now shows the global scheduler state instead of the selected account's state, so starting automation from the Accounts page is immediately visible on the Dashboard
+
+#### Rate limiting & scan staggering
+
+- Accounts no longer scan simultaneously: each additional account receives a 5-minute start offset (account 1 at T+0, account 2 at T+5 min, account 3 at T+10 min, etc.)
+- The same staggering is applied automatically on startup for accounts that had automation enabled
+- Added a 1-second delay between page requests within a single scan to avoid burst traffic
 
 ### v3.0.0
 

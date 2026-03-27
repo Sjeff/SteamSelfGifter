@@ -50,6 +50,8 @@ const mockLog: ActivityLog = {
   event_type: 'scan',
   message: 'Scan completed successfully',
   details: 'Found 5 new giveaways',
+  account_id: 1,
+  account_name: 'Main',
   created_at: '2024-01-01T00:00:00Z',
 };
 

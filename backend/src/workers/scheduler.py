@@ -6,7 +6,7 @@ and entry processing.
 """
 
 from typing import Callable, Any
-from datetime import datetime
+from datetime import datetime, timedelta, UTC
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -121,6 +121,7 @@ class SchedulerManager:
         minutes: int | None = None,
         seconds: int | None = None,
         hours: int | None = None,
+        start_date: datetime | None = None,
         **kwargs: Any,
     ) -> Job:
         """
@@ -152,6 +153,8 @@ class SchedulerManager:
             trigger_kwargs["seconds"] = seconds
         if hours is not None:
             trigger_kwargs["hours"] = hours
+        if start_date is not None:
+            trigger_kwargs["start_date"] = start_date
 
         trigger = IntervalTrigger(**trigger_kwargs)
 
@@ -170,6 +173,7 @@ class SchedulerManager:
             interval_minutes=minutes,
             interval_seconds=seconds,
             interval_hours=hours,
+            start_date=start_date.isoformat() if start_date else None,
         )
 
         return job

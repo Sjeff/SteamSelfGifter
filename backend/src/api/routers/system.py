@@ -13,9 +13,10 @@ from datetime import datetime
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
 
-from api.dependencies import NotificationServiceDep
+from api.dependencies import AccountServiceDep, DatabaseDep
 from api.schemas.common import create_success_response
 from core.config import settings
+from services.notification_service import NotificationService
 
 
 router = APIRouter()
@@ -83,7 +84,8 @@ async def system_info() -> Dict[str, Any]:
 
 @router.get("/logs", response_model=Dict[str, Any])
 async def get_logs(
-    notification_service: NotificationServiceDep,
+    db: DatabaseDep,
+    account_service: AccountServiceDep,
     limit: int = Query(default=50, ge=1, le=500, description="Number of logs to retrieve"),
     level: str | None = Query(default=None, description="Filter by log level (info, warning, error)"),
     event_type: str | None = Query(default=None, description="Filter by event type (scan, entry, error, config, scheduler)"),
@@ -120,7 +122,8 @@ async def get_logs(
             }
         }
     """
-    # Get activity logs based on filter
+    # Always fetch logs for ALL accounts (unscoped)
+    notification_service = NotificationService(db)
     if level:
         activity_logs = await notification_service.get_logs_by_level(
             level=level,
@@ -134,6 +137,10 @@ async def get_logs(
     else:
         activity_logs = await notification_service.get_recent_logs(limit=limit)
 
+    # Build account id -> name lookup
+    accounts = await account_service.list_accounts()
+    account_names = {a.id: a.name for a in accounts}
+
     # Convert to log format
     logs = [
         {
@@ -141,6 +148,9 @@ async def get_logs(
             "level": log.level,
             "event_type": log.event_type,
             "message": log.message,
+            "details": log.details,
+            "account_id": log.account_id,
+            "account_name": account_names.get(log.account_id) if log.account_id else None,
             "created_at": log.created_at.isoformat() if log.created_at else None,
         }
         for log in activity_logs
@@ -157,7 +167,7 @@ async def get_logs(
 
 @router.delete("/logs", response_model=Dict[str, Any])
 async def clear_logs(
-    notification_service: NotificationServiceDep,
+    db: DatabaseDep,
 ) -> Dict[str, Any]:
     """
     Clear all activity logs.
@@ -175,6 +185,7 @@ async def clear_logs(
             }
         }
     """
+    notification_service = NotificationService(db)
     deleted_count = await notification_service.clear_all_logs()
 
     return create_success_response(
@@ -186,7 +197,7 @@ async def clear_logs(
 
 @router.get("/logs/export")
 async def export_logs(
-    notification_service: NotificationServiceDep,
+    db: DatabaseDep,
     format: str = Query(default="json", description="Export format (json or csv)"),
 ):
     """
@@ -200,6 +211,7 @@ async def export_logs(
     Returns:
         StreamingResponse: File download
     """
+    notification_service = NotificationService(db)
     activity_logs = await notification_service.get_all_logs()
 
     # Convert to list of dicts

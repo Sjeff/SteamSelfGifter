@@ -4,6 +4,7 @@ This module provides the service layer for giveaway operations, coordinating
 between repositories and external SteamGifts client.
 """
 
+import asyncio
 from typing import Optional, List, Tuple
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -117,6 +118,8 @@ class GiveawayService:
         updated_count = 0
 
         for page in range(1, pages + 1):
+            if page > 1:
+                await asyncio.sleep(1)  # 1s delay between pages to avoid burst requests
             try:
                 giveaways_data = await self.sg_client.get_giveaways(
                     page=page,

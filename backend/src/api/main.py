@@ -86,6 +86,9 @@ async def lifespan(app: FastAPI):
             account_repo = AccountRepository(session)
             active_accounts = await account_repo.get_all_active()
 
+            from datetime import datetime, timedelta, UTC
+            started_count = 0
+
             for account in active_accounts:
                 if account.automation_enabled:
                     logger.info("auto_starting_scheduler_for_account", account_id=account.id, account_name=account.name)
@@ -95,12 +98,18 @@ async def lifespan(app: FastAPI):
 
                     scan_interval = account.scan_interval_minutes or 30
 
+                    # Stagger start times: 5-minute offset per account
+                    offset_minutes = started_count * 5
+                    start_date = datetime.now(UTC) + timedelta(minutes=offset_minutes)
+
                     # Add per-account automation cycle job
                     scheduler_manager.add_interval_job(
                         func=partial(automation_cycle, account_id=account.id),
                         job_id=f"automation_cycle_{account.id}",
                         minutes=scan_interval,
+                        start_date=start_date,
                     )
+                    started_count += 1
 
                     # Add per-account safety check job
                     if account.safety_check_enabled:
