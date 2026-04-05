@@ -4,6 +4,7 @@
 [![Docker](https://github.com/Sjeff/SteamSelfGifter/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/Sjeff/SteamSelfGifter/actions/workflows/docker-publish.yml)
 [![Python Version](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Built with Claude](https://img.shields.io/badge/built%20with-Claude-blueviolet?logo=anthropic)](https://claude.ai)
 
 SteamSelfGifter is an automated bot for entering Steam game giveaways on SteamGifts.com. It features a modern web interface for managing your giveaway entries, tracking wins, and configuring automation settings — with full multi-account support.
 
@@ -195,6 +196,19 @@ alembic upgrade head
 ```
 
 ## Changelog
+
+### v3.0.3
+
+All changes in this release were made in collaboration with [Claude](https://claude.ai) (Anthropic).
+
+#### Bug fixes
+
+- Fixed "Failed to load wins" error on accounts with an expired SteamGifts session — read-only endpoints (Wins, Giveaways) now work regardless of session state; only live SteamGifts operations (entering, scanning) require a valid session
+- Corrected misleading label "Min Game Price ($)" → "Min Giveaway Cost (points)" on the Accounts page to reflect that the value is in SteamGifts points, not dollars
+
+#### Dependency management
+
+- Added Dependabot configuration for weekly automated dependency updates across npm (frontend), pip (backend), Docker base images, and GitHub Actions
 
 ### v3.0.1
 
