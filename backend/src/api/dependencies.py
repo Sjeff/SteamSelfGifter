@@ -7,6 +7,7 @@ enabling clean dependency injection of database sessions and service layers.
 from typing import Annotated, Optional
 from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession
+import structlog
 
 from db.session import get_db
 from services.settings_service import SettingsService
@@ -17,6 +18,8 @@ from services.scheduler_service import SchedulerService
 from services.account_service import AccountService
 from utils.steam_client import SteamClient
 from utils.steamgifts_client import SteamGiftsClient
+
+logger = structlog.get_logger()
 
 
 # Database session dependency
@@ -151,7 +154,13 @@ async def get_giveaway_service(
         phpsessid=settings.phpsessid or "",
         user_agent=settings.user_agent,
     )
-    await sg_client.start()
+    try:
+        await sg_client.start()
+    except Exception as e:
+        # Session may be expired or invalid — log and continue.
+        # Read-only DB endpoints (e.g. /won, /giveaways) still work;
+        # SteamGifts HTTP operations will fail when actually attempted.
+        logger.warning("steamgifts_client_start_failed", account_id=resolved_account_id, error=str(e))
 
     # Create Steam client for game data
     steam_client = SteamClient()
