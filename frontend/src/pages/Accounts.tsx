@@ -325,11 +325,11 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
           helperText="Stop when points drop below this"
         />
         <Input
-          label="Min Game Price ($)"
+          label="Min Giveaway Cost (points)"
           type="number"
           value={form.autojoin_min_price}
           onChange={(e) => set('autojoin_min_price', parseInt(e.target.value) || 0)}
-          helperText="Minimum game price"
+          helperText="Minimum giveaway cost in SteamGifts points"
         />
         <Input
           label="Min Review Score"
