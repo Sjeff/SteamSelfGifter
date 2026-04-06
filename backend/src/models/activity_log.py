@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import String, Integer, DateTime, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.base import Base
+from models.base import Base, TZDateTime
 
 
 class ActivityLog(Base):
@@ -108,7 +108,7 @@ class ActivityLog(Base):
 
     # ==================== Timestamp ====================
     created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        TZDateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         index=True,

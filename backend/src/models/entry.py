@@ -5,7 +5,7 @@ from sqlalchemy import String, Integer, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import Optional
 
-from models.base import Base, TimestampMixin
+from models.base import Base, TimestampMixin, TZDateTime
 
 
 class Entry(Base, TimestampMixin):
@@ -107,7 +107,7 @@ class Entry(Base, TimestampMixin):
 
     # ==================== Tracking ====================
     entered_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
+        TZDateTime,
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         comment="When entry was attempted (UTC)",

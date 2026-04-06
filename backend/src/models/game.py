@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import String, Integer, Boolean, DateTime, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.base import Base, TimestampMixin
+from models.base import Base, TimestampMixin, TZDateTime
 
 
 class Game(Base, TimestampMixin):
@@ -132,7 +132,7 @@ class Game(Base, TimestampMixin):
 
     # ==================== Cache Management ====================
     last_refreshed_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
+        TZDateTime,
         nullable=True,
         comment="Last Steam API fetch time",
     )

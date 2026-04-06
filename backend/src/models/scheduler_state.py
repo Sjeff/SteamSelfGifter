@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from sqlalchemy import Integer, DateTime, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.base import Base, TimestampMixin
+from models.base import Base, TimestampMixin, TZDateTime
 
 
 class SchedulerState(Base, TimestampMixin):
@@ -71,12 +71,12 @@ class SchedulerState(Base, TimestampMixin):
 
     # ==================== Timing Information ====================
     last_scan_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
+        TZDateTime,
         nullable=True,
         comment="When last scan completed (UTC)",
     )
     next_scan_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True),
+        TZDateTime,
         nullable=True,
         comment="When next scan is scheduled (UTC)",
     )
