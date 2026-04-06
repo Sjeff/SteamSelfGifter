@@ -522,7 +522,7 @@ async def test_mark_entered_with_custom_time(test_db):
     """Test marking giveaway as entered with custom timestamp."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        custom_time = datetime(2025, 1, 1, 12, 0, 0)
+        custom_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
         giveaway = await repo.create(
             code="GA1", game_name="Game 1", price=50, url="http://test.com"
