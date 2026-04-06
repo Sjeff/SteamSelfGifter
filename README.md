@@ -197,6 +197,15 @@ alembic upgrade head
 
 ## Changelog
 
+### v3.0.5
+
+All changes in this release were made in collaboration with [Claude](https://claude.ai) (Anthropic).
+
+#### Bug fixes
+
+- Fixed `PendingRollbackError` in the safety checker when the SQLite database is locked — added `session.rollback()` in the except block before re-using the session, preventing the fallback commit from also failing
+- Fixed `TypeError: can't compare offset-naive and offset-aware datetimes` when entering a giveaway — `update_win_check_for_new_entry` now compares both datetimes as timezone-aware, consistent with the `TZDateTime` fix introduced in v3.0.4
+
 ### v3.0.4
 
 All changes in this release were made in collaboration with [Claude](https://claude.ai) (Anthropic).
