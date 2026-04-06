@@ -5,7 +5,7 @@ ensuring consistent response structure across all endpoints.
 """
 
 from typing import Any, Optional, Generic, TypeVar
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 
@@ -313,7 +313,7 @@ def create_success_response(
         True
     """
     meta = ResponseMeta(
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat() + "Z",
         request_id=request_id,
         page=page,
         per_page=per_page,
@@ -356,7 +356,7 @@ def create_error_response(
         False
     """
     meta = ResponseMeta(
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        timestamp=datetime.now(timezone.utc).isoformat() + "Z",
         request_id=request_id,
     )
 

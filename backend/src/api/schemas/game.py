@@ -5,7 +5,7 @@ API requests and responses.
 """
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 
@@ -102,7 +102,7 @@ class GameResponse(GameBase):
         ...     name="Portal 2",
         ...     type="game",
         ...     review_score=9,
-        ...     last_refreshed_at=datetime.utcnow()
+        ...     last_refreshed_at=datetime.now(timezone.utc)
         ... )
     """
 
@@ -214,7 +214,7 @@ class GameRefreshResponse(BaseModel):
         >>> response = GameRefreshResponse(
         ...     refreshed=True,
         ...     message="Game data refreshed successfully",
-        ...     last_refreshed_at=datetime.utcnow()
+        ...     last_refreshed_at=datetime.now(timezone.utc)
         ... )
     """
 

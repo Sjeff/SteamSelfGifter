@@ -5,7 +5,7 @@ between the GameRepository and external Steam API client.
 """
 
 from typing import Optional, List
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories.game import GameRepository
@@ -190,7 +190,7 @@ class GameService:
             existing_game.total_positive = total_positive if total_positive is not None else existing_game.total_positive
             existing_game.total_negative = total_negative if total_negative is not None else existing_game.total_negative
             existing_game.total_reviews = (total_positive + total_negative) if (total_positive is not None and total_negative is not None) else existing_game.total_reviews
-            existing_game.last_refreshed_at = datetime.utcnow()
+            existing_game.last_refreshed_at = datetime.now(timezone.utc)
 
             return existing_game
         else:
@@ -208,7 +208,7 @@ class GameService:
                 total_positive=total_positive or 0,
                 total_negative=total_negative or 0,
                 total_reviews=(total_positive + total_negative) if (total_positive is not None and total_negative is not None) else 0,
-                last_refreshed_at=datetime.utcnow(),
+                last_refreshed_at=datetime.now(timezone.utc),
             )
 
             return game

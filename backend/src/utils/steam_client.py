@@ -6,7 +6,7 @@ automatic rate limiting, retry logic, and error handling.
 
 import asyncio
 from typing import Optional, Dict, Any
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import httpx
 
 
@@ -49,7 +49,7 @@ class RateLimiter:
     async def __aenter__(self):
         """Acquire rate limit (async context manager)."""
         async with self.lock:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
 
             # Remove old calls outside window
             cutoff = now - self.window
@@ -67,7 +67,7 @@ class RateLimiter:
                     self.calls = self.calls[1:]
 
             # Record this call
-            self.calls.append(datetime.utcnow())
+            self.calls.append(datetime.now(timezone.utc))
 
         return self
 

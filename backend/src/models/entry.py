@@ -1,6 +1,6 @@
 """Giveaway entry tracking model."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import String, Integer, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from typing import Optional
@@ -109,7 +109,7 @@ class Entry(Base, TimestampMixin):
     entered_at: Mapped[datetime] = mapped_column(
         DateTime,
         nullable=False,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         comment="When entry was attempted (UTC)",
     )
     error_message: Mapped[str | None] = mapped_column(

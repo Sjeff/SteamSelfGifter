@@ -8,7 +8,7 @@ import csv
 import json
 from io import StringIO
 from typing import Dict, Any
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Query
 from fastapi.responses import StreamingResponse
@@ -45,7 +45,7 @@ async def health_check() -> Dict[str, Any]:
     return create_success_response(
         data={
             "status": "healthy",
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "version": "0.1.0",
         }
     )
@@ -236,12 +236,12 @@ async def export_logs(
             writer.writerows(logs_data)
         content = output.getvalue()
         media_type = "text/csv"
-        filename = f"logs_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.csv"
+        filename = f"logs_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.csv"
     else:
         # Generate JSON
         content = json.dumps(logs_data, indent=2)
         media_type = "application/json"
-        filename = f"logs_{datetime.utcnow().strftime('%Y%m%d_%H%M%S')}.json"
+        filename = f"logs_{datetime.now(timezone.utc).strftime('%Y%m%d_%H%M%S')}.json"
 
     return StreamingResponse(
         iter([content]),

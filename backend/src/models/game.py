@@ -1,6 +1,6 @@
 """Steam game/DLC/bundle data model."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import String, Integer, Boolean, DateTime, Text, JSON
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -194,5 +194,5 @@ class Game(Base, TimestampMixin):
         """
         if not self.last_refreshed_at:
             return True
-        days_old = (datetime.utcnow() - self.last_refreshed_at).days
+        days_old = (datetime.now(timezone.utc) - self.last_refreshed_at).days
         return days_old > 7

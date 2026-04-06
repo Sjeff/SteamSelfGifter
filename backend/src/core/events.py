@@ -6,7 +6,7 @@ connected WebSocket clients, enabling real-time updates in the web UI.
 
 import asyncio
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict, Any, Set
 from fastapi import WebSocket
 
@@ -123,7 +123,7 @@ class EventManager:
         event = {
             "type": event_type,
             "data": data,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         # Track disconnected clients for removal

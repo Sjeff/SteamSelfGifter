@@ -5,7 +5,7 @@ between repositories and giveaway entry automation.
 """
 
 from typing import Dict, Any, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -183,7 +183,7 @@ class SchedulerService:
             stats["failed"] = failed_count
 
             # Update state statistics
-            state.last_scan_at = datetime.utcnow()
+            state.last_scan_at = datetime.now(timezone.utc)
             state.total_scans += 1
             state.total_entries += entered_count
 
@@ -244,7 +244,7 @@ class SchedulerService:
 
         Example:
             >>> from datetime import datetime, timedelta
-            >>> next_time = datetime.utcnow() + timedelta(minutes=30)
+            >>> next_time = datetime.now(timezone.utc) + timedelta(minutes=30)
             >>> await service.update_next_scan_time(next_time)
         """
         state = await self._get_or_create_state()
@@ -386,8 +386,8 @@ class SchedulerService:
         run_date = next_giveaway.end_time + timedelta(minutes=5)
 
         # Don't schedule in the past
-        if run_date <= datetime.utcnow():
-            run_date = datetime.utcnow() + timedelta(minutes=1)
+        if run_date <= datetime.now(timezone.utc):
+            run_date = datetime.now(timezone.utc) + timedelta(minutes=1)
 
         # Schedule the job
         self._schedule_win_check_job(run_date)

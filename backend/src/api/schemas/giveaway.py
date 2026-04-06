@@ -5,7 +5,7 @@ API requests and responses.
 """
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field, field_serializer
 
 
@@ -102,7 +102,7 @@ class GiveawayResponse(GiveawayBase):
         ...     url="https://www.steamgifts.com/giveaway/AbCd1/",
         ...     game_name="Portal 2",
         ...     price=50,
-        ...     discovered_at=datetime.utcnow()
+        ...     discovered_at=datetime.now(timezone.utc)
         ... )
     """
 

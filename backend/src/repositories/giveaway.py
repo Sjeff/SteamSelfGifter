@@ -6,7 +6,7 @@ giveaway visibility.
 """
 
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -136,7 +136,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> len(active)
             10
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Base conditions
         conditions = [
@@ -224,7 +224,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             ...     limit=5
             ... )
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Base filters: active, not hidden, not entered, price range
         conditions = [
@@ -338,7 +338,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         Example:
             >>> entered = await repo.get_entered(limit=20, active_only=True)
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         conditions = [self.model.is_entered == True]  # noqa: E712
 
@@ -379,7 +379,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         Example:
             >>> wishlist = await repo.get_wishlist(limit=20)
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         conditions = [
             self.model.is_wishlist == True,  # noqa: E712
             self.model.is_hidden == False,  # noqa: E712
@@ -505,7 +505,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             True
         """
         if entered_at is None:
-            entered_at = datetime.utcnow()
+            entered_at = datetime.now(timezone.utc)
 
         return await self.update(
             giveaway_id, is_entered=True, entered_at=entered_at
@@ -528,7 +528,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> # Get giveaways ending in next 6 hours
             >>> expiring = await repo.get_expiring_soon(hours=6, limit=10)
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         cutoff = now + timedelta(hours=hours)
 
         query = (
@@ -562,7 +562,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> count = await repo.count_active()
             >>> print(f"Active giveaways: {count}")
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         query = select(self.model).where(
             and_(
                 self.model.end_time.isnot(None),
@@ -676,7 +676,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> if next_ga:
             ...     print(f"Next expires at: {next_ga.end_time}")
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         query = (
             select(self.model)
             .where(
@@ -705,7 +705,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
         Example:
             >>> from datetime import datetime, timedelta
-            >>> thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+            >>> thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
             >>> count = await repo.count_entered_since(thirty_days_ago)
         """
         from sqlalchemy import func
@@ -732,7 +732,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
         Example:
             >>> from datetime import datetime, timedelta
-            >>> thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+            >>> thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
             >>> count = await repo.count_won_since(thirty_days_ago)
         """
         from sqlalchemy import func
@@ -759,12 +759,12 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
         Example:
             >>> from datetime import datetime, timedelta
-            >>> week_ago = datetime.utcnow() - timedelta(days=7)
+            >>> week_ago = datetime.now(timezone.utc) - timedelta(days=7)
             >>> stats = await repo.get_stats_since(week_ago)
         """
         from sqlalchemy import func, case
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         conditions = [self.model.discovered_at >= since]
         f = self._account_filter()
@@ -901,7 +901,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> if unchecked:
             ...     await safety_check(unchecked[0])
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         conditions = [
             self.model.end_time.isnot(None),

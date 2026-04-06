@@ -5,7 +5,7 @@ API requests and responses.
 """
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field
 
 
@@ -59,7 +59,7 @@ class EntryResponse(EntryBase):
         ...     points_spent=50,
         ...     entry_type="manual",
         ...     status="success",
-        ...     entered_at=datetime.utcnow()
+        ...     entered_at=datetime.now(timezone.utc)
         ... )
     """
 
