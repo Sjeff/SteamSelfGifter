@@ -1,7 +1,7 @@
 """Unit tests for entry API schemas."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import ValidationError
 
 from api.schemas.entry import (
@@ -87,7 +87,7 @@ def test_entry_response():
         points_spent=50,
         entry_type="manual",
         status="success",
-        entered_at=datetime.utcnow()
+        entered_at=datetime.now(timezone.utc)
     )
 
     assert entry.id == 456
@@ -99,11 +99,11 @@ def test_entry_list():
     """Test EntryList."""
     entry1 = EntryResponse(
         id=1, giveaway_id=123, points_spent=50, entry_type="manual",
-        status="success", entered_at=datetime.utcnow()
+        status="success", entered_at=datetime.now(timezone.utc)
     )
     entry2 = EntryResponse(
         id=2, giveaway_id=124, points_spent=75, entry_type="auto",
-        status="success", entered_at=datetime.utcnow()
+        status="success", entered_at=datetime.now(timezone.utc)
     )
 
     entry_list = EntryList(entries=[entry1, entry2])
@@ -207,7 +207,7 @@ def test_entry_history_item():
         points_spent=50,
         entry_type="manual",
         status="success",
-        entered_at=datetime.utcnow()
+        entered_at=datetime.now(timezone.utc)
     )
 
     history_item = EntryHistoryItem(
@@ -231,7 +231,7 @@ def test_entry_history():
         points_spent=50,
         entry_type="manual",
         status="success",
-        entered_at=datetime.utcnow()
+        entered_at=datetime.now(timezone.utc)
     )
 
     history_item = EntryHistoryItem(

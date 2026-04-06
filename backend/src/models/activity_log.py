@@ -1,10 +1,10 @@
 """Activity and event logging model."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import String, Integer, DateTime, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.base import Base
+from models.base import Base, TZDateTime
 
 
 class ActivityLog(Base):
@@ -108,9 +108,9 @@ class ActivityLog(Base):
 
     # ==================== Timestamp ====================
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        TZDateTime,
         nullable=False,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(timezone.utc),
         index=True,
         comment="When log was created (UTC)",
     )

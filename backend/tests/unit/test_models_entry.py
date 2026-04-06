@@ -10,7 +10,7 @@ This module contains comprehensive tests for the Entry model, including:
 """
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -97,7 +97,7 @@ def test_entry_creation_complete(session, giveaway):
     # WHEN: Creating an entry with all fields populated including error message
     # THEN: All fields are correctly stored
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     entry = Entry(
         giveaway_id=giveaway.id,
         points_spent=100,

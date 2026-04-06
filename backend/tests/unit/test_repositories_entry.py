@@ -1,7 +1,7 @@
 """Unit tests for EntryRepository."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from models.base import Base
@@ -275,7 +275,7 @@ async def test_get_in_date_range(test_db, sample_giveaway):
     """Test getting entries within date range."""
     async with test_db() as session:
         repo = EntryRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Create entry 2 days ago
         old_entry = await repo.create(
@@ -636,7 +636,7 @@ async def test_get_entries_since(test_db, sample_giveaway):
     """Test getting entries since a specific time."""
     async with test_db() as session:
         repo = EntryRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Create old entry
         old_entry = await repo.create(

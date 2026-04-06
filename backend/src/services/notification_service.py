@@ -148,13 +148,13 @@ class NotificationService:
             ... )
             >>> # API layer would then broadcast 'event' via WebSocket
         """
-        from datetime import datetime
+        from datetime import datetime, timezone
 
         # Prepare event structure
         event = {
             "type": event_type,
             "data": data,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
         # Optionally log to activity log

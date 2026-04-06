@@ -1,7 +1,7 @@
 """Unit tests for GiveawayRepository."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from models.base import Base
@@ -63,7 +63,7 @@ async def test_get_active_returns_only_active(test_db):
     """Test getting active giveaways excludes expired ones."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Active giveaway
         await repo.create(
@@ -96,7 +96,7 @@ async def test_get_active_excludes_hidden(test_db):
     """Test getting active giveaways excludes hidden ones."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Active, not hidden
         await repo.create(
@@ -131,7 +131,7 @@ async def test_get_active_with_limit(test_db):
     """Test getting active giveaways with limit."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Create 5 active giveaways
         for i in range(5):
@@ -155,7 +155,7 @@ async def test_get_active_ordered_by_end_time(test_db):
     """Test active giveaways are ordered by end_time (soonest first)."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Create in reverse order
         await repo.create(
@@ -187,7 +187,7 @@ async def test_get_eligible_basic_filters(test_db):
     """Test getting eligible giveaways with basic price filter."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Eligible (price >= 50)
         await repo.create(
@@ -220,7 +220,7 @@ async def test_get_eligible_excludes_entered(test_db):
     """Test eligible giveaways excludes already entered."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Not entered
         await repo.create(
@@ -255,7 +255,7 @@ async def test_get_eligible_with_max_price(test_db):
     """Test eligible giveaways with max price filter."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         await repo.create(
             code="GA1",
@@ -286,7 +286,7 @@ async def test_get_eligible_ordered_by_price_desc(test_db):
     """Test eligible giveaways ordered by price descending."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         await repo.create(
             code="LOW",
@@ -389,7 +389,7 @@ async def test_get_entered(test_db):
     """Test getting entered giveaways."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         await repo.create(
             code="NOT_ENTERED",
@@ -522,7 +522,7 @@ async def test_mark_entered_with_custom_time(test_db):
     """Test marking giveaway as entered with custom timestamp."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        custom_time = datetime(2025, 1, 1, 12, 0, 0)
+        custom_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
 
         giveaway = await repo.create(
             code="GA1", game_name="Game 1", price=50, url="http://test.com"
@@ -540,7 +540,7 @@ async def test_get_expiring_soon(test_db):
     """Test getting giveaways expiring soon."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Expires in 6 hours
         await repo.create(
@@ -582,7 +582,7 @@ async def test_get_expiring_soon_excludes_entered(test_db):
     """Test expiring soon excludes already entered giveaways."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         await repo.create(
             code="AVAILABLE",
@@ -615,7 +615,7 @@ async def test_count_active(test_db):
     """Test counting active giveaways."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # 2 active
         await repo.create(

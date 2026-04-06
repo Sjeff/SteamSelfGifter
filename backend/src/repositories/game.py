@@ -6,7 +6,7 @@ Steam game metadata.
 """
 
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -115,7 +115,7 @@ class GameRepository(BaseRepository[Game]):
             ...     # Refresh game data from Steam API
             ...     pass
         """
-        cutoff_date = datetime.utcnow() - timedelta(days=days_threshold)
+        cutoff_date = datetime.now(timezone.utc) - timedelta(days=days_threshold)
 
         stmt = select(Game).where(
             or_(
@@ -227,7 +227,7 @@ class GameRepository(BaseRepository[Game]):
             This method does NOT commit the transaction. The caller must
             call session.commit() to persist changes to the database.
         """
-        return await self.update(app_id, last_refreshed_at=datetime.utcnow())
+        return await self.update(app_id, last_refreshed_at=datetime.now(timezone.utc))
 
     async def bulk_mark_refreshed(self, app_ids: List[int]) -> None:
         """
@@ -244,7 +244,7 @@ class GameRepository(BaseRepository[Game]):
             This method does NOT commit the transaction. The caller must
             call session.commit() to persist changes to the database.
         """
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         for app_id in app_ids:
             await self.update(app_id, last_refreshed_at=now)
 

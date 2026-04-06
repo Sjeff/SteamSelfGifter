@@ -10,7 +10,7 @@ This module contains comprehensive tests for the Game model, including:
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -79,7 +79,7 @@ def test_game_creation_with_all_fields(session):
         total_negative=200,
         total_reviews=1700,
         is_bundle=False,
-        last_refreshed_at=datetime.utcnow(),
+        last_refreshed_at=datetime.now(timezone.utc),
         description="A great game",
         price=1999,  # $19.99
     )
@@ -239,7 +239,7 @@ def test_needs_refresh_property_recently_refreshed(session):
         id=999999,
         name="Recently Refreshed",
         type="game",
-        last_refreshed_at=datetime.utcnow() - timedelta(days=3),
+        last_refreshed_at=datetime.now(timezone.utc) - timedelta(days=3),
     )
     session.add(game)
     session.commit()
@@ -257,7 +257,7 @@ def test_needs_refresh_property_stale_data(session):
         id=101010,
         name="Stale Data",
         type="game",
-        last_refreshed_at=datetime.utcnow() - timedelta(days=10),
+        last_refreshed_at=datetime.now(timezone.utc) - timedelta(days=10),
     )
     session.add(game)
     session.commit()
@@ -316,7 +316,7 @@ def test_cache_fields(session):
         id=131313,
         name="Cached Game",
         type="game",
-        last_refreshed_at=datetime.utcnow(),
+        last_refreshed_at=datetime.now(timezone.utc),
     )
     session.add(game)
     session.commit()
@@ -342,7 +342,7 @@ def test_game_update(session):
     # Update game data
     game.name = "New Name"
     game.review_score = 7
-    game.last_refreshed_at = datetime.utcnow()
+    game.last_refreshed_at = datetime.now(timezone.utc)
     session.commit()
 
     # Verify updates
@@ -388,7 +388,7 @@ def test_needs_refresh_property_computed(session):
     assert game.needs_refresh is True
 
     # Update last_refreshed_at - needs_refresh should automatically become False
-    game.last_refreshed_at = datetime.utcnow()
+    game.last_refreshed_at = datetime.now(timezone.utc)
     session.commit()
     assert game.needs_refresh is False
 

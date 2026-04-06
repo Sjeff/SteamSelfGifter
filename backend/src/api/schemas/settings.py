@@ -5,7 +5,7 @@ API requests and responses.
 """
 
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -163,8 +163,8 @@ class SettingsResponse(SettingsBase):
         ...     id=1,
         ...     user_agent="Mozilla/5.0...",
         ...     autojoin_enabled=True,
-        ...     created_at=datetime.utcnow(),
-        ...     updated_at=datetime.utcnow()
+        ...     created_at=datetime.now(timezone.utc),
+        ...     updated_at=datetime.now(timezone.utc)
         ... )
     """
 

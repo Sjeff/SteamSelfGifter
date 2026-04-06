@@ -1,8 +1,26 @@
 """Base classes and mixins for database models."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import DateTime, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.types import TypeDecorator
+
+
+class TZDateTime(TypeDecorator):
+    """DateTime that always returns timezone-aware (UTC) datetimes.
+
+    SQLite stores datetimes as naive strings. This type re-attaches
+    timezone.utc on read so the rest of the codebase can safely use
+    datetime.now(timezone.utc) for comparisons.
+    """
+
+    impl = DateTime
+    cache_ok = True
+
+    def process_result_value(self, value, dialect):
+        if value is not None and value.tzinfo is None:
+            return value.replace(tzinfo=timezone.utc)
+        return value
 
 
 class Base(DeclarativeBase):
@@ -52,13 +70,13 @@ class TimestampMixin:
     """
 
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        TZDateTime,
         nullable=False,
         server_default=func.now(),
         comment="When record was created (UTC)",
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        TZDateTime,
         nullable=False,
         server_default=func.now(),
         onupdate=func.now(),

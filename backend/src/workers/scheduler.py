@@ -6,7 +6,7 @@ and entry processing.
 """
 
 from typing import Callable, Any
-from datetime import datetime, timedelta, UTC
+from datetime import datetime, timedelta, UTC, timezone
 
 import structlog
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -257,7 +257,7 @@ class SchedulerManager:
 
         Example:
             >>> from datetime import datetime, timedelta
-            >>> run_at = datetime.utcnow() + timedelta(hours=2)
+            >>> run_at = datetime.now(timezone.utc) + timedelta(hours=2)
             >>> scheduler_manager.add_date_job(
             ...     func=check_wins,
             ...     job_id="win_check_123",

@@ -197,6 +197,20 @@ alembic upgrade head
 
 ## Changelog
 
+### v3.0.4
+
+All changes in this release were made in collaboration with [Claude](https://claude.ai) (Anthropic).
+
+#### Bug fixes
+
+- Fixed automation cycle crash when the Steam API returns no review data for a game — review fields (`review_score`, `total_positive`, `total_negative`, `total_reviews`) now fall back to `0` instead of `None` to satisfy the database `NOT NULL` constraint
+
+#### Code quality
+
+- Replaced all uses of the deprecated `datetime.utcnow()` (52 call sites across 21 files + 19 test files) with `datetime.now(timezone.utc)` — required for Python 3.12+ compatibility
+- Added `TZDateTime` SQLAlchemy TypeDecorator to re-attach `timezone.utc` when reading datetimes from SQLite, preventing naive/aware comparison errors
+- Fixed CI workflow running 4 jobs per PR instead of 2 — push trigger now limited to `master`
+
 ### v3.0.3
 
 All changes in this release were made in collaboration with [Claude](https://claude.ai) (Anthropic).

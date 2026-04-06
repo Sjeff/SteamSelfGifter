@@ -1,7 +1,7 @@
 """Unit tests for WebSocket event manager."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from core.events import EventManager, event_manager
@@ -107,7 +107,7 @@ async def test_broadcast_event_single_client(manager, mock_websocket):
     await manager.connect(mock_websocket)
 
     with patch('core.events.datetime') as mock_datetime:
-        mock_datetime.utcnow.return_value = datetime(2024, 1, 15, 10, 30, 0)
+        mock_datetime.now.return_value = datetime(2024, 1, 15, 10, 30, 0, tzinfo=timezone.utc)
 
         await manager.broadcast_event("scan_complete", {"new": 5, "updated": 3})
 
@@ -278,7 +278,7 @@ async def test_event_structure(manager, mock_websocket):
     await manager.connect(mock_websocket)
 
     with patch('core.events.datetime') as mock_datetime:
-        mock_datetime.utcnow.return_value = datetime(2024, 1, 15, 10, 30, 45)
+        mock_datetime.now.return_value = datetime(2024, 1, 15, 10, 30, 45, tzinfo=timezone.utc)
 
         await manager.broadcast_event("test_type", {"key": "value"})
 
@@ -290,7 +290,7 @@ async def test_event_structure(manager, mock_websocket):
     assert "timestamp" in sent_event
     assert sent_event["type"] == "test_type"
     assert sent_event["data"] == {"key": "value"}
-    assert sent_event["timestamp"] == "2024-01-15T10:30:45"
+    assert sent_event["timestamp"] == "2024-01-15T10:30:45+00:00"
 
 
 @pytest.mark.asyncio

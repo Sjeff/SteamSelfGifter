@@ -5,7 +5,7 @@ and filtering capabilities for Steam game data.
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
 from models.base import Base
@@ -146,8 +146,8 @@ async def test_get_stale_games_old_data(game_repo, session):
     # WHEN: Stale games are requested
     # THEN: Games older than threshold should be returned
 
-    old_date = datetime.utcnow() - timedelta(days=10)
-    recent_date = datetime.utcnow() - timedelta(days=3)
+    old_date = datetime.now(timezone.utc) - timedelta(days=10)
+    recent_date = datetime.now(timezone.utc) - timedelta(days=3)
 
     await game_repo.create(
         id=730, name="CS2", type="game", last_refreshed_at=old_date
@@ -286,10 +286,10 @@ async def test_mark_refreshed(game_repo, session):
     await game_repo.create(id=730, name="CS2", type="game")
     await session.commit()
 
-    before = datetime.utcnow()
+    before = datetime.now(timezone.utc)
     game = await game_repo.mark_refreshed(730)
     await session.commit()
-    after = datetime.utcnow()
+    after = datetime.now(timezone.utc)
 
     assert game is not None
     assert game.last_refreshed_at is not None

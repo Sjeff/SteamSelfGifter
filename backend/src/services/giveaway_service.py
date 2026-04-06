@@ -6,7 +6,7 @@ between repositories and external SteamGifts client.
 
 import asyncio
 from typing import Optional, List, Tuple
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from repositories.giveaway import GiveawayRepository
@@ -187,7 +187,7 @@ class GiveawayService:
                     if giveaway and not giveaway.is_won:
                         # Mark as won
                         giveaway.is_won = True
-                        giveaway.won_at = win.get("won_at") or datetime.utcnow()
+                        giveaway.won_at = win.get("won_at") or datetime.now(timezone.utc)
                         new_wins += 1
 
                     elif not giveaway:
@@ -202,7 +202,7 @@ class GiveawayService:
                             game_id=win.get("game_id"),
                             is_entered=True,
                             is_won=True,
-                            won_at=win.get("won_at") or datetime.utcnow(),
+                            won_at=win.get("won_at") or datetime.now(timezone.utc),
                         )
                         new_wins += 1
 

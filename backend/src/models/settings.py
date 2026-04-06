@@ -4,7 +4,7 @@ from datetime import datetime
 from sqlalchemy import String, Integer, Boolean, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
 
-from models.base import Base, TimestampMixin
+from models.base import Base, TimestampMixin, TZDateTime
 
 
 class Settings(Base, TimestampMixin):
@@ -180,7 +180,7 @@ class Settings(Base, TimestampMixin):
 
     # ==================== Metadata ====================
     last_synced_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        TZDateTime,
         nullable=True,
         comment="Last sync with SteamGifts",
     )
