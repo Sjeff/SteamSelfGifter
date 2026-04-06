@@ -108,6 +108,12 @@ async def automation_cycle(account_id: int = None) -> Dict[str, Any]:
             except Exception as e:
                 logger.error("scan_giveaways_failed", error=str(e))
                 results["scan"]["error"] = str(e)
+                await session.rollback()
+                await notification_service.log_activity(
+                    level="error",
+                    event_type="scan",
+                    message=f"Scan failed: {str(e)}",
+                )
 
             # === STEP 2: Scan wishlist giveaways ===
             logger.info("automation_step", step="scan_wishlist")
@@ -125,6 +131,12 @@ async def automation_cycle(account_id: int = None) -> Dict[str, Any]:
             except Exception as e:
                 logger.error("scan_wishlist_failed", error=str(e))
                 results["wishlist"]["error"] = str(e)
+                await session.rollback()
+                await notification_service.log_activity(
+                    level="error",
+                    event_type="scan",
+                    message=f"Wishlist scan failed: {str(e)}",
+                )
 
             # === STEP 2.5: Scan DLC giveaways (if enabled) ===
             dlc_enabled = getattr(settings, 'dlc_enabled', False)
@@ -146,6 +158,12 @@ async def automation_cycle(account_id: int = None) -> Dict[str, Any]:
                 except Exception as e:
                     logger.error("scan_dlc_failed", error=str(e))
                     results["dlc"]["error"] = str(e)
+                    await session.rollback()
+                    await notification_service.log_activity(
+                        level="error",
+                        event_type="scan",
+                        message=f"DLC scan failed: {str(e)}",
+                    )
             else:
                 results["dlc"] = {"skipped": True, "reason": "dlc_disabled"}
 
@@ -168,6 +186,12 @@ async def automation_cycle(account_id: int = None) -> Dict[str, Any]:
             except Exception as e:
                 logger.error("sync_wins_failed", error=str(e))
                 results["wins"]["error"] = str(e)
+                await session.rollback()
+                await notification_service.log_activity(
+                    level="error",
+                    event_type="win",
+                    message=f"Win sync failed: {str(e)}",
+                )
 
             # === STEP 3.5: Sync entered giveaways ===
             logger.info("automation_step", step="sync_entered")
@@ -184,6 +208,12 @@ async def automation_cycle(account_id: int = None) -> Dict[str, Any]:
             except Exception as e:
                 logger.error("sync_entered_failed", error=str(e))
                 results["entered_sync"]["error"] = str(e)
+                await session.rollback()
+                await notification_service.log_activity(
+                    level="error",
+                    event_type="scan",
+                    message=f"Entered giveaways sync failed: {str(e)}",
+                )
 
             # === STEP 4: Process entries ===
             logger.info("automation_step", step="process_entries")
@@ -209,6 +239,11 @@ async def automation_cycle(account_id: int = None) -> Dict[str, Any]:
                 except Exception as e:
                     logger.error("process_entries_failed", error=str(e))
                     results["entries"]["error"] = str(e)
+                    await notification_service.log_activity(
+                        level="error",
+                        event_type="entry",
+                        message=f"Entry processing failed: {str(e)}",
+                    )
 
             # Calculate total cycle time
             end_time = datetime.now(UTC)

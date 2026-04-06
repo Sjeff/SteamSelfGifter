@@ -186,10 +186,10 @@ class GameService:
             existing_game.is_bundle = is_bundle
             existing_game.bundle_content = bundle_content
             existing_game.game_id = game_id
-            existing_game.review_score = review_score
-            existing_game.total_positive = total_positive
-            existing_game.total_negative = total_negative
-            existing_game.total_reviews = total_positive + total_negative if (total_positive is not None and total_negative is not None) else None
+            existing_game.review_score = review_score if review_score is not None else existing_game.review_score
+            existing_game.total_positive = total_positive if total_positive is not None else existing_game.total_positive
+            existing_game.total_negative = total_negative if total_negative is not None else existing_game.total_negative
+            existing_game.total_reviews = (total_positive + total_negative) if (total_positive is not None and total_negative is not None) else existing_game.total_reviews
             existing_game.last_refreshed_at = datetime.utcnow()
 
             return existing_game
@@ -204,10 +204,10 @@ class GameService:
                 is_bundle=is_bundle,
                 bundle_content=bundle_content,
                 game_id=game_id,
-                review_score=review_score,
-                total_positive=total_positive,
-                total_negative=total_negative,
-                total_reviews=total_positive + total_negative if (total_positive is not None and total_negative is not None) else None,
+                review_score=review_score or 0,
+                total_positive=total_positive or 0,
+                total_negative=total_negative or 0,
+                total_reviews=(total_positive + total_negative) if (total_positive is not None and total_negative is not None) else 0,
                 last_refreshed_at=datetime.utcnow(),
             )
 
