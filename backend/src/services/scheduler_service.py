@@ -474,9 +474,10 @@ class SchedulerService:
             # No job exists, schedule one
             self._schedule_win_check_job(new_check_time)
         elif job.next_run_time:
-            # Compare naive datetimes (APScheduler returns timezone-aware)
-            job_next_run_naive = job.next_run_time.replace(tzinfo=None)
-            if new_check_time < job_next_run_naive:
+            # Ensure both datetimes are timezone-aware for comparison
+            job_next_run = job.next_run_time
+            check_time = new_check_time if new_check_time.tzinfo else new_check_time.replace(tzinfo=timezone.utc)
+            if check_time < job_next_run:
                 # New giveaway expires sooner, update the job
                 self._schedule_win_check_job(new_check_time)
 
