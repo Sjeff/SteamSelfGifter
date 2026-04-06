@@ -1,7 +1,7 @@
 """Unit tests for GiveawayService."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
@@ -76,7 +76,7 @@ async def test_sync_giveaways_new(test_db, mock_sg_client, mock_game_service):
                     "price": 50,
                     "copies": 1,
                     "entries": 100,
-                    "end_time": datetime.utcnow() + timedelta(hours=24),
+                    "end_time": datetime.now(timezone.utc) + timedelta(hours=24),
                     "thumbnail_url": "https://example.com/image.jpg",
                     "game_id": 730,
                 }
@@ -119,7 +119,7 @@ async def test_sync_giveaways_updates_existing(test_db, mock_sg_client, mock_gam
                     "price": 50,
                     "copies": 1,
                     "entries": 150,  # Updated
-                    "end_time": datetime.utcnow() + timedelta(hours=12),
+                    "end_time": datetime.now(timezone.utc) + timedelta(hours=12),
                     "thumbnail_url": None,
                     "game_id": None,
                 }
@@ -320,7 +320,7 @@ async def test_get_eligible_giveaways(test_db, mock_sg_client, mock_game_service
         service = GiveawayService(session, mock_sg_client, mock_game_service)
 
         # Create test giveaways
-        future_time = datetime.utcnow() + timedelta(hours=24)
+        future_time = datetime.now(timezone.utc) + timedelta(hours=24)
 
         # Eligible
         await service.giveaway_repo.create(
@@ -361,7 +361,7 @@ async def test_get_active_giveaways(test_db, mock_sg_client, mock_game_service):
             url="https://www.steamgifts.com/giveaway/GA1/",
             game_name="Active",
             price=50,
-            end_time=datetime.utcnow() + timedelta(hours=24),
+            end_time=datetime.now(timezone.utc) + timedelta(hours=24),
         )
         # Create expired giveaway
         await service.giveaway_repo.create(
@@ -369,7 +369,7 @@ async def test_get_active_giveaways(test_db, mock_sg_client, mock_game_service):
             url="https://www.steamgifts.com/giveaway/GA2/",
             game_name="Expired",
             price=50,
-            end_time=datetime.utcnow() - timedelta(hours=1),
+            end_time=datetime.now(timezone.utc) - timedelta(hours=1),
         )
         await session.commit()
 
@@ -385,7 +385,7 @@ async def test_get_expiring_soon(test_db, mock_sg_client, mock_game_service):
     async with test_db() as session:
         service = GiveawayService(session, mock_sg_client, mock_game_service)
 
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         # Expires in 2 hours
         await service.giveaway_repo.create(
@@ -509,7 +509,7 @@ async def test_get_giveaway_stats(test_db, mock_sg_client, mock_game_service):
             url="https://www.steamgifts.com/giveaway/GA1/",
             game_name="Active",
             price=50,
-            end_time=datetime.utcnow() + timedelta(hours=24),
+            end_time=datetime.now(timezone.utc) + timedelta(hours=24),
         )
         # Create entered giveaway
         ga2 = await service.giveaway_repo.create(
@@ -517,7 +517,7 @@ async def test_get_giveaway_stats(test_db, mock_sg_client, mock_game_service):
             url="https://www.steamgifts.com/giveaway/GA2/",
             game_name="Entered",
             price=75,
-            end_time=datetime.utcnow() + timedelta(hours=12),
+            end_time=datetime.now(timezone.utc) + timedelta(hours=12),
         )
         ga2.is_entered = True
 
@@ -809,7 +809,7 @@ async def test_sync_giveaways_dlc_only(test_db, mock_sg_client, mock_game_servic
                     "game_name": "Game DLC Pack",
                     "price": 25,
                     "copies": 1,
-                    "end_time": datetime.utcnow() + timedelta(hours=24),
+                    "end_time": datetime.now(timezone.utc) + timedelta(hours=24),
                     "thumbnail_url": None,
                     "game_id": None,
                 }
@@ -844,7 +844,7 @@ async def test_sync_giveaways_min_copies(test_db, mock_sg_client, mock_game_serv
                     "game_name": "Multi-Copy Game",
                     "price": 100,
                     "copies": 10,
-                    "end_time": datetime.utcnow() + timedelta(hours=24),
+                    "end_time": datetime.now(timezone.utc) + timedelta(hours=24),
                     "thumbnail_url": None,
                     "game_id": None,
                 }

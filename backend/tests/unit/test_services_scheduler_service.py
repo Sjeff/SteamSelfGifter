@@ -1,7 +1,7 @@
 """Unit tests for SchedulerService."""
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
@@ -237,7 +237,7 @@ async def test_get_scheduler_stats(test_db, mock_giveaway_service):
         state.total_scans = 10
         state.total_entries = 25
         state.total_errors = 2
-        state.last_scan_at = datetime.utcnow()
+        state.last_scan_at = datetime.now(timezone.utc)
         await session.commit()
 
         stats = await service.get_scheduler_stats()
@@ -255,7 +255,7 @@ async def test_update_next_scan_time(test_db, mock_giveaway_service):
     async with test_db() as session:
         service = SchedulerService(session, mock_giveaway_service)
 
-        next_time = datetime.utcnow() + timedelta(minutes=30)
+        next_time = datetime.now(timezone.utc) + timedelta(minutes=30)
         state = await service.update_next_scan_time(next_time)
 
         assert state.next_scan_at is not None
@@ -273,7 +273,7 @@ async def test_reset_scheduler_stats(test_db, mock_giveaway_service):
         state.total_scans = 100
         state.total_entries = 250
         state.total_errors = 5
-        state.last_scan_at = datetime.utcnow()
+        state.last_scan_at = datetime.now(timezone.utc)
         await session.commit()
 
         # Reset

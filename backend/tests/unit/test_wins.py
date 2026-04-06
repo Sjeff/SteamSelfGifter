@@ -1,7 +1,7 @@
 """Unit tests for win detection and tracking functionality."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 
 
@@ -171,7 +171,7 @@ class TestGiveawayRepositoryNextExpiring:
         from repositories.giveaway import GiveawayRepository
 
         # Create mock giveaways with different end times
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
 
         mock_session = AsyncMock()
         mock_result = MagicMock()

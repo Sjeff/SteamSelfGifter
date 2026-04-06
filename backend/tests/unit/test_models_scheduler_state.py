@@ -9,7 +9,7 @@ This module contains comprehensive tests for the SchedulerState model, including
 """
 
 import pytest
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
@@ -116,8 +116,8 @@ def test_scheduler_state_timing_fields(session):
     # WHEN: Creating a scheduler state with last_scan and next_scan times
     # THEN: Both timing fields are correctly stored
 
-    last_scan = datetime.utcnow() - timedelta(hours=1)
-    next_scan = datetime.utcnow() + timedelta(hours=1)
+    last_scan = datetime.now(timezone.utc) - timedelta(hours=1)
+    next_scan = datetime.now(timezone.utc) + timedelta(hours=1)
 
     state = SchedulerState(
         id=1,
@@ -172,7 +172,7 @@ def test_has_run_property_has_ran(session):
 
     state = SchedulerState(
         id=1,
-        last_scan_at=datetime.utcnow() - timedelta(hours=1),
+        last_scan_at=datetime.now(timezone.utc) - timedelta(hours=1),
     )
     session.add(state)
     session.commit()
@@ -187,7 +187,7 @@ def test_time_since_last_scan_property(session):
     # THEN: The property returns approximately 7200 seconds
 
     # Set last scan to 2 hours ago
-    last_scan = datetime.utcnow() - timedelta(hours=2)
+    last_scan = datetime.now(timezone.utc) - timedelta(hours=2)
     state = SchedulerState(id=1, last_scan_at=last_scan)
     session.add(state)
     session.commit()
@@ -218,7 +218,7 @@ def test_time_until_next_scan_property(session):
     # THEN: The property returns approximately 3600 seconds
 
     # Set next scan to 1 hour from now
-    next_scan = datetime.utcnow() + timedelta(hours=1)
+    next_scan = datetime.now(timezone.utc) + timedelta(hours=1)
     state = SchedulerState(id=1, next_scan_at=next_scan)
     session.add(state)
     session.commit()
@@ -249,7 +249,7 @@ def test_time_until_next_scan_negative(session):
     # THEN: The property returns 0 instead of a negative value
 
     # Set next scan to the past
-    past_scan = datetime.utcnow() - timedelta(hours=1)
+    past_scan = datetime.now(timezone.utc) - timedelta(hours=1)
     state = SchedulerState(id=1, next_scan_at=past_scan)
     session.add(state)
     session.commit()
@@ -296,7 +296,7 @@ def test_update_timing(session):
     assert state.has_run is False
 
     # Update after first scan
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     next_scan = now + timedelta(minutes=30)
     state.last_scan_at = now
     state.next_scan_at = next_scan
@@ -361,8 +361,8 @@ def test_scheduler_state_complete_lifecycle(session):
     assert state.total_scans == 0
 
     # First scan completes
-    state.last_scan_at = datetime.utcnow()
-    state.next_scan_at = datetime.utcnow() + timedelta(minutes=30)
+    state.last_scan_at = datetime.now(timezone.utc)
+    state.next_scan_at = datetime.now(timezone.utc) + timedelta(minutes=30)
     state.total_scans = 1
     state.total_entries = 3
     session.commit()
@@ -382,7 +382,7 @@ def test_scheduler_state_complete_lifecycle(session):
     for _ in range(5):
         state.total_scans += 1
         state.total_entries += 2
-        state.last_scan_at = datetime.utcnow()
+        state.last_scan_at = datetime.now(timezone.utc)
 
     session.commit()
 

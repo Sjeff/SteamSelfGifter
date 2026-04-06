@@ -1,7 +1,7 @@
 """Unit tests for system API router."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
 from api.routers.system import (
@@ -21,7 +21,7 @@ def create_mock_activity_log(log_id: int, level: str, event_type: str, message: 
     log.message = message
     log.details = None
     log.account_id = None
-    log.created_at = datetime.utcnow()
+    log.created_at = datetime.now(timezone.utc)
     return log
 
 

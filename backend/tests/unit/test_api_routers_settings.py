@@ -1,7 +1,7 @@
 """Unit tests for settings API router."""
 
 import pytest
-from datetime import datetime
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock
 from fastapi import HTTPException
 from pydantic import ValidationError
@@ -40,8 +40,8 @@ def create_mock_settings():
     settings.entry_delay_min = 8
     settings.entry_delay_max = 12
     settings.last_synced_at = None
-    settings.created_at = datetime.utcnow()
-    settings.updated_at = datetime.utcnow()
+    settings.created_at = datetime.now(timezone.utc)
+    settings.updated_at = datetime.now(timezone.utc)
     return settings
 
 
