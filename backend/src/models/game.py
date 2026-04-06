@@ -132,7 +132,7 @@ class Game(Base, TimestampMixin):
 
     # ==================== Cache Management ====================
     last_refreshed_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True,
         comment="Last Steam API fetch time",
     )

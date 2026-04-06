@@ -71,12 +71,12 @@ class SchedulerState(Base, TimestampMixin):
 
     # ==================== Timing Information ====================
     last_scan_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True,
         comment="When last scan completed (UTC)",
     )
     next_scan_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True,
         comment="When next scan is scheduled (UTC)",
     )

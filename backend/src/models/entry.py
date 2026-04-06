@@ -107,7 +107,7 @@ class Entry(Base, TimestampMixin):
 
     # ==================== Tracking ====================
     entered_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         comment="When entry was attempted (UTC)",

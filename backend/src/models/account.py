@@ -167,7 +167,7 @@ class Account(Base, TimestampMixin):
 
     # ==================== Metadata ====================
     last_synced_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True,
         comment="Last sync with SteamGifts",
     )

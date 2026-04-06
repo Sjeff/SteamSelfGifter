@@ -207,7 +207,7 @@ All changes in this release were made in collaboration with [Claude](https://cla
 
 #### Code quality
 
-- Replaced all uses of the deprecated `datetime.utcnow()` (52 call sites across 21 files) with `datetime.now(timezone.utc)` — required for Python 3.12+ compatibility
+- Replaced all uses of the deprecated `datetime.utcnow()` (52 call sites across 21 files + 19 test files) with `datetime.now(timezone.utc)` — required for Python 3.12+ compatibility
 
 ### v3.0.3
 

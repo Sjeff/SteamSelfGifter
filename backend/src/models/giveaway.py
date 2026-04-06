@@ -120,7 +120,7 @@ class Giveaway(Base, TimestampMixin):
         comment="Number of copies available",
     )
     end_time: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True,
         comment="When giveaway ends (UTC)",
     )
@@ -148,7 +148,7 @@ class Giveaway(Base, TimestampMixin):
         comment="Whether user won this giveaway",
     )
     won_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True,
         comment="When the win was detected",
     )
@@ -167,13 +167,13 @@ class Giveaway(Base, TimestampMixin):
 
     # ==================== Timestamps ====================
     discovered_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         comment="When we first discovered this",
     )
     entered_at: Mapped[datetime | None] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=True,
         comment="When we entered this giveaway",
     )

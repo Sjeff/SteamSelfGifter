@@ -108,7 +108,7 @@ class ActivityLog(Base):
 
     # ==================== Timestamp ====================
     created_at: Mapped[datetime] = mapped_column(
-        DateTime,
+        DateTime(timezone=True),
         nullable=False,
         default=lambda: datetime.now(timezone.utc),
         index=True,
