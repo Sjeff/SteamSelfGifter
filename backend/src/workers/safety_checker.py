@@ -178,6 +178,7 @@ async def safety_check_cycle(account_id: int = None) -> Dict[str, Any]:
                 error=str(e),
                 error_type=type(e).__name__,
             )
+            await session.rollback()
             # Mark as checked but with unknown status to avoid retrying indefinitely
             giveaway.is_safe = True  # Assume safe on error to not block entry
             giveaway.safety_score = 50  # Middle score to indicate uncertainty
