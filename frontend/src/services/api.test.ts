@@ -22,6 +22,7 @@ describe("ApiClient", () => {
 
       expect(fetch).toHaveBeenCalledWith("/api/test", {
         method: "GET",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
       expect(result).toEqual(mockResponse);
@@ -49,6 +50,7 @@ describe("ApiClient", () => {
 
       expect(fetch).toHaveBeenCalledWith("/api/items", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
@@ -65,6 +67,7 @@ describe("ApiClient", () => {
 
       expect(fetch).toHaveBeenCalledWith("/api/action", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: undefined,
       });
@@ -83,6 +86,7 @@ describe("ApiClient", () => {
 
       expect(fetch).toHaveBeenCalledWith("/api/items/1", {
         method: "PUT",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
@@ -101,6 +105,7 @@ describe("ApiClient", () => {
 
       expect(fetch).toHaveBeenCalledWith("/api/items/1", {
         method: "DELETE",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
       });
       expect(result).toEqual(mockResponse);

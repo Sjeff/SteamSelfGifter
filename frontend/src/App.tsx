@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useEffect } from "react";
 
 import { Layout } from "@/components/layout/Layout";
-import { WebSocketProvider } from "@/components/providers";
+import { AuthProvider, WebSocketProvider } from "@/components/providers";
 import { initializeTheme } from "@/stores/themeStore";
 import { useSchedulerStatus } from "@/hooks";
 
@@ -73,9 +73,11 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>
-        <AppContent />
-      </WebSocketProvider>
+      <AuthProvider>
+        <WebSocketProvider>
+          <AppContent />
+        </WebSocketProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

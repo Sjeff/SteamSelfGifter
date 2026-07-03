@@ -1,9 +1,90 @@
 import { useState, useEffect } from "react";
-import { Save, AlertCircle } from "lucide-react";
+import { Save, AlertCircle, LogOut, KeyRound } from "lucide-react";
 import { Card, Button, Input, Toggle, Loading } from "@/components/common";
-import { useSettings, useUpdateSettings } from "@/hooks";
+import {
+  useSettings,
+  useUpdateSettings,
+  useCurrentUser,
+  useLogout,
+  useChangePassword,
+} from "@/hooks";
 import { showSuccess, showError } from "@/stores/uiStore";
 import type { Settings as SettingsType } from "@/types";
+
+function AccountSection() {
+  const { data: user } = useCurrentUser();
+  const logout = useLogout();
+  const changePassword = useChangePassword();
+
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+
+  const handleChangePassword = async () => {
+    try {
+      await changePassword.mutateAsync({
+        current_password: currentPassword,
+        new_password: newPassword,
+      });
+      showSuccess("Password changed successfully");
+      setCurrentPassword("");
+      setNewPassword("");
+    } catch (err) {
+      showError(
+        err instanceof Error ? err.message : "Failed to change password",
+      );
+    }
+  };
+
+  return (
+    <Card
+      title="Account"
+      actions={
+        <Button
+          variant="secondary"
+          size="sm"
+          icon={LogOut}
+          onClick={() => logout.mutate()}
+          isLoading={logout.isPending}
+        >
+          Log out
+        </Button>
+      }
+    >
+      <div className="space-y-4">
+        <p className="text-sm text-gray-500 dark:text-gray-400">
+          Logged in as <strong>{user?.username}</strong>
+        </p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Input
+            label="Current Password"
+            type="password"
+            autoComplete="current-password"
+            value={currentPassword}
+            onChange={(e) => setCurrentPassword(e.target.value)}
+          />
+          <Input
+            label="New Password"
+            type="password"
+            autoComplete="new-password"
+            minLength={8}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            helperText="At least 8 characters"
+          />
+        </div>
+        <Button
+          variant="secondary"
+          icon={KeyRound}
+          isLoading={changePassword.isPending}
+          disabled={!currentPassword || newPassword.length < 8}
+          onClick={handleChangePassword}
+        >
+          Change Password
+        </Button>
+      </div>
+    </Card>
+  );
+}
 
 /**
  * Settings page
@@ -103,6 +184,8 @@ export function Settings() {
           Save Changes
         </Button>
       </div>
+
+      <AccountSection />
 
       {/* Application Settings */}
       <Card title="Application Settings">

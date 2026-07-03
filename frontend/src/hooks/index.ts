@@ -109,3 +109,16 @@ export {
 
 // WebSocket status hook (for accessing provider context)
 export { useWebSocketStatus } from "./useWebSocketStatus";
+
+// Auth hooks
+export {
+  useAuthStatus,
+  useCurrentUser,
+  useSetup,
+  useLogin,
+  useLogout,
+  useChangePassword,
+  authKeys,
+  type AuthUser,
+  type AuthStatus,
+} from "./useAuth";
