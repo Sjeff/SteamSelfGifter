@@ -19,69 +19,46 @@ def use_real_auth(test_client):
 
 
 @pytest.mark.asyncio
-async def test_status_before_and_after_setup(test_client: AsyncClient):
-    response = await test_client.get("/api/v1/auth/status")
-    assert response.json()["data"]["setup_complete"] is False
+async def test_setup_flow(test_client: AsyncClient):
+    status_before = await test_client.get("/api/v1/auth/status")
+    assert status_before.json()["data"]["setup_complete"] is False
 
-    await test_client.post(
+    setup_response = await test_client.post(
         "/api/v1/auth/setup", json={"username": "admin", "password": "correct horse battery"}
     )
-
-    response = await test_client.get("/api/v1/auth/status")
-    assert response.json()["data"]["setup_complete"] is True
-
-
-@pytest.mark.asyncio
-async def test_setup_can_only_run_once(test_client: AsyncClient):
-    first = await test_client.post(
-        "/api/v1/auth/setup", json={"username": "admin", "password": "correct horse battery"}
-    )
-    assert first.status_code == 200
-
-    second = await test_client.post(
-        "/api/v1/auth/setup", json={"username": "someone-else", "password": "another password"}
-    )
-    assert second.status_code == 403
-
-
-@pytest.mark.asyncio
-async def test_setup_logs_you_in(test_client: AsyncClient):
-    response = await test_client.post(
-        "/api/v1/auth/setup", json={"username": "admin", "password": "correct horse battery"}
-    )
-    assert response.status_code == 200
-    assert "session_token" in response.cookies
+    assert setup_response.status_code == 200
+    assert "session_token" in setup_response.cookies
 
     me = await test_client.get("/api/v1/auth/me")
     assert me.status_code == 200
     assert me.json()["data"]["username"] == "admin"
 
+    status_after = await test_client.get("/api/v1/auth/status")
+    assert status_after.json()["data"]["setup_complete"] is True
+
+    second_setup = await test_client.post(
+        "/api/v1/auth/setup", json={"username": "someone-else", "password": "another password"}
+    )
+    assert second_setup.status_code == 403
+
 
 @pytest.mark.asyncio
-async def test_login_wrong_password_rejected(test_client: AsyncClient):
+async def test_login_flow(test_client: AsyncClient):
     await test_client.post(
         "/api/v1/auth/setup", json={"username": "admin", "password": "correct horse battery"}
     )
     await test_client.post("/api/v1/auth/logout")
 
-    response = await test_client.post(
+    wrong = await test_client.post(
         "/api/v1/auth/login", json={"username": "admin", "password": "wrong password"}
     )
-    assert response.status_code == 401
+    assert wrong.status_code == 401
 
-
-@pytest.mark.asyncio
-async def test_login_correct_password_succeeds(test_client: AsyncClient):
-    await test_client.post(
-        "/api/v1/auth/setup", json={"username": "admin", "password": "correct horse battery"}
-    )
-    await test_client.post("/api/v1/auth/logout")
-
-    response = await test_client.post(
+    correct = await test_client.post(
         "/api/v1/auth/login", json={"username": "admin", "password": "correct horse battery"}
     )
-    assert response.status_code == 200
-    assert "session_token" in response.cookies
+    assert correct.status_code == 200
+    assert "session_token" in correct.cookies
 
 
 @pytest.mark.asyncio
@@ -105,15 +82,15 @@ async def test_account_locks_after_repeated_failures(test_client: AsyncClient):
 
 
 @pytest.mark.asyncio
-async def test_me_without_cookie_is_unauthorized(test_client: AsyncClient):
-    response = await test_client.get("/api/v1/auth/me")
-    assert response.status_code == 401
+async def test_requires_session(test_client: AsyncClient):
+    """Both CurrentUserDep-as-parameter (auth router) and router-level
+    dependencies=[...] (every other router) must reject unauthenticated requests.
+    """
+    me = await test_client.get("/api/v1/auth/me")
+    assert me.status_code == 401
 
-
-@pytest.mark.asyncio
-async def test_protected_route_requires_session(test_client: AsyncClient):
-    response = await test_client.get("/api/v1/system/health")
-    assert response.status_code == 401
+    other_router = await test_client.get("/api/v1/system/health")
+    assert other_router.status_code == 401
 
 
 @pytest.mark.asyncio
