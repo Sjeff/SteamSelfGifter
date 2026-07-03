@@ -17,6 +17,9 @@ from models.entry import Entry  # noqa: F401
 from models.game import Game  # noqa: F401
 from models.scheduler_state import SchedulerState  # noqa: F401
 from models.activity_log import ActivityLog  # noqa: F401
+from models.account import Account  # noqa: F401
+from models.user import User  # noqa: F401
+from models.session import AuthSession  # noqa: F401
 from core.config import settings as app_settings
 
 # this is the Alembic Config object, which provides

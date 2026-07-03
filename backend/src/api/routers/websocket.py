@@ -4,8 +4,13 @@ This module provides WebSocket endpoints for establishing real-time
 bidirectional communication between the server and web clients.
 """
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, status
+
+from api.dependencies import SESSION_COOKIE_NAME
 from core.events import event_manager
+from core.exceptions import AuthenticationError
+from db.session import AsyncSessionLocal
+from services.auth_service import AuthService
 
 
 router = APIRouter()
@@ -89,6 +94,18 @@ async def websocket_endpoint(websocket: WebSocket):
             "timestamp": "2024-01-15T10:30:45.123456"
         }
     """
+    token = websocket.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
+        await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+        return
+
+    async with AsyncSessionLocal() as session:
+        try:
+            await AuthService(session).validate_session(token)
+        except AuthenticationError:
+            await websocket.close(code=status.WS_1008_POLICY_VIOLATION)
+            return
+
     # Accept and register the WebSocket connection
     await event_manager.connect(websocket)
 

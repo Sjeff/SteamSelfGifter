@@ -11,12 +11,16 @@ from fastapi import Request, status
 from fastapi.responses import JSONResponse
 
 from core.exceptions import (
+    AccountLockedError,
     AppException,
+    AuthenticationError,
     ConfigurationError,
     InsufficientPointsError,
+    InvalidCredentialsError,
     RateLimitError,
     ResourceNotFoundError,
     SchedulerError,
+    SetupAlreadyCompleteError,
     SteamAPIError,
     SteamGiftsError,
     SteamGiftsSessionExpiredError,
@@ -363,6 +367,71 @@ async def scheduler_error_handler(
     )
     return create_error_response(
         status_code=status.HTTP_409_CONFLICT,
+        message=exc.message,
+        code=exc.code,
+        details=exc.details,
+    )
+
+
+async def authentication_error_handler(request: Request, exc: AuthenticationError) -> JSONResponse:
+    """Handler for AuthenticationError. Returns 401 Unauthorized."""
+    logger.warning(
+        "authentication_error",
+        code=exc.code,
+        message=exc.message,
+        path=request.url.path,
+    )
+    return create_error_response(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        message=exc.message,
+        code=exc.code,
+        details=exc.details,
+    )
+
+
+async def invalid_credentials_handler(request: Request, exc: InvalidCredentialsError) -> JSONResponse:
+    """Handler for InvalidCredentialsError. Returns 401 Unauthorized."""
+    logger.warning(
+        "invalid_credentials",
+        code=exc.code,
+        message=exc.message,
+        path=request.url.path,
+    )
+    return create_error_response(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        message=exc.message,
+        code=exc.code,
+        details=exc.details,
+    )
+
+
+async def account_locked_handler(request: Request, exc: AccountLockedError) -> JSONResponse:
+    """Handler for AccountLockedError. Returns 429 Too Many Requests."""
+    logger.warning(
+        "account_locked",
+        code=exc.code,
+        message=exc.message,
+        details=exc.details,
+        path=request.url.path,
+    )
+    return create_error_response(
+        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+        message=exc.message,
+        code=exc.code,
+        details=exc.details,
+    )
+
+
+async def setup_already_complete_handler(request: Request, exc: SetupAlreadyCompleteError) -> JSONResponse:
+    """Handler for SetupAlreadyCompleteError. Returns 403 Forbidden."""
+    logger.warning(
+        "setup_already_complete",
+        code=exc.code,
+        message=exc.message,
+        path=request.url.path,
+    )
+    return create_error_response(
+        status_code=status.HTTP_403_FORBIDDEN,
         message=exc.message,
         code=exc.code,
         details=exc.details,
