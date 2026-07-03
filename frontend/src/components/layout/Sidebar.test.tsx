@@ -55,6 +55,6 @@ describe("Sidebar", () => {
     expect(nav).toBeInTheDocument();
 
     const listItems = screen.getAllByRole("listitem");
-    expect(listItems).toHaveLength(7);
+    expect(listItems).toHaveLength(8);
   });
 });

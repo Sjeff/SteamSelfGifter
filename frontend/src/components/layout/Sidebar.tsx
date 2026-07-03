@@ -8,6 +8,7 @@ import {
   BarChart3,
   FileText,
   Users,
+  Settings as SettingsIcon,
   LucideIcon,
 } from "lucide-react";
 import { clsx } from "clsx";
@@ -28,6 +29,7 @@ const navItems: NavItem[] = [
   { path: "/analytics", label: "Analytics", icon: BarChart3 },
   { path: "/accounts", label: "Accounts", icon: Users },
   { path: "/logs", label: "Logs", icon: FileText },
+  { path: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 /**
