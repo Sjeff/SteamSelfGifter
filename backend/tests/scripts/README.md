@@ -5,6 +5,7 @@ Utility scripts for fetching SteamGifts pages to help debug HTML parsing.
 ## Prerequisites
 
 These scripts read the PHPSESSID from the database. Make sure you have:
+
 1. Configured your PHPSESSID in the app settings
 2. The database exists at `backend/data/steamselfgifter.db`
 

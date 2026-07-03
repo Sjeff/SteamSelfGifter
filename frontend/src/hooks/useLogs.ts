@@ -1,13 +1,13 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/services/api';
-import type { ActivityLog } from '@/types';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/services/api";
+import type { ActivityLog } from "@/types";
 
 /**
  * Query keys for logs
  */
 export const logKeys = {
-  all: ['logs'] as const,
-  lists: () => [...logKeys.all, 'list'] as const,
+  all: ["logs"] as const,
+  lists: () => [...logKeys.all, "list"] as const,
   list: (filters: LogFilters) => [...logKeys.lists(), filters] as const,
 };
 
@@ -15,8 +15,8 @@ export const logKeys = {
  * Filter options for logs
  */
 export interface LogFilters {
-  level?: 'info' | 'warning' | 'error' | 'all';
-  event_type?: 'scan' | 'entry' | 'error' | 'config' | 'scheduler' | 'all';
+  level?: "info" | "warning" | "error" | "all";
+  event_type?: "scan" | "entry" | "error" | "config" | "scheduler" | "all";
   from_date?: string;
   to_date?: string;
   search?: string;
@@ -53,33 +53,34 @@ export function useLogs(filters: LogFilters = {}) {
     queryKey: logKeys.list(filters),
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filters.accountId) params.set('account_id', String(filters.accountId));
+      if (filters.accountId)
+        params.set("account_id", String(filters.accountId));
 
-      if (filters.level && filters.level !== 'all') {
-        params.set('level', filters.level);
+      if (filters.level && filters.level !== "all") {
+        params.set("level", filters.level);
       }
-      if (filters.event_type && filters.event_type !== 'all') {
-        params.set('event_type', filters.event_type);
+      if (filters.event_type && filters.event_type !== "all") {
+        params.set("event_type", filters.event_type);
       }
       if (filters.from_date) {
-        params.set('from_date', filters.from_date);
+        params.set("from_date", filters.from_date);
       }
       if (filters.to_date) {
-        params.set('to_date', filters.to_date);
+        params.set("to_date", filters.to_date);
       }
       if (filters.search) {
-        params.set('search', filters.search);
+        params.set("search", filters.search);
       }
       if (filters.limit) {
-        params.set('limit', String(filters.limit));
+        params.set("limit", String(filters.limit));
       }
 
       const queryString = params.toString();
-      const endpoint = `/api/v1/system/logs${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `/api/v1/system/logs${queryString ? `?${queryString}` : ""}`;
 
       const response = await api.get<LogsApiResponse>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch logs');
+        throw new Error(response.error || "Failed to fetch logs");
       }
 
       // Transform backend response to frontend format
@@ -108,9 +109,11 @@ export function useClearLogs() {
 
   return useMutation({
     mutationFn: async () => {
-      const response = await api.delete<{ deleted: number }>('/api/v1/system/logs');
+      const response = await api.delete<{ deleted: number }>(
+        "/api/v1/system/logs",
+      );
       if (!response.success) {
-        throw new Error(response.error || 'Failed to clear logs');
+        throw new Error(response.error || "Failed to clear logs");
       }
       return response.data;
     },
@@ -125,11 +128,13 @@ export function useClearLogs() {
  */
 export function useExportLogs() {
   return useMutation({
-    mutationFn: async (format: 'csv' | 'json') => {
+    mutationFn: async (format: "csv" | "json") => {
       // This endpoint returns a file download, not JSON
-      const response = await fetch(`/api/v1/system/logs/export?format=${format}`);
+      const response = await fetch(
+        `/api/v1/system/logs/export?format=${format}`,
+      );
       if (!response.ok) {
-        throw new Error('Failed to export logs');
+        throw new Error("Failed to export logs");
       }
       const blob = await response.blob();
       return { blob, format };
@@ -137,9 +142,9 @@ export function useExportLogs() {
     onSuccess: ({ blob, format }) => {
       // Trigger browser download
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
+      const a = document.createElement("a");
       a.href = url;
-      a.download = `logs_${new Date().toISOString().split('T')[0]}.${format}`;
+      a.download = `logs_${new Date().toISOString().split("T")[0]}.${format}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);

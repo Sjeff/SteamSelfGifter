@@ -1,6 +1,6 @@
-import { Sun, Moon, Activity, Wifi, WifiOff } from 'lucide-react';
-import { useThemeStore } from '@/stores/themeStore';
-import { useWebSocketStatus } from '@/hooks';
+import { Sun, Moon, Activity, Wifi, WifiOff } from "lucide-react";
+import { useThemeStore } from "@/stores/themeStore";
+import { useWebSocketStatus } from "@/hooks";
 
 interface HeaderProps {
   schedulerRunning?: boolean;
@@ -10,21 +10,24 @@ interface HeaderProps {
 /**
  * Application header with logo, scheduler status, and theme toggle
  */
-export function Header({ schedulerRunning = false, schedulerPaused = false }: HeaderProps) {
+export function Header({
+  schedulerRunning = false,
+  schedulerPaused = false,
+}: HeaderProps) {
   const { isDark, toggle } = useThemeStore();
   const { isConnected } = useWebSocketStatus();
 
   // Determine status color and text
-  let statusColor = 'text-gray-400';
-  let statusText = 'Stopped';
+  let statusColor = "text-gray-400";
+  let statusText = "Stopped";
 
   if (schedulerRunning) {
     if (schedulerPaused) {
-      statusColor = 'text-yellow-500';
-      statusText = 'Paused';
+      statusColor = "text-yellow-500";
+      statusText = "Paused";
     } else {
-      statusColor = 'text-green-500';
-      statusText = 'Running';
+      statusColor = "text-green-500";
+      statusText = "Running";
     }
   }
 
@@ -40,7 +43,11 @@ export function Header({ schedulerRunning = false, schedulerPaused = false }: He
           {/* WebSocket Connection Indicator */}
           <div
             className="flex items-center gap-1"
-            title={isConnected ? 'Real-time updates connected' : 'Real-time updates disconnected'}
+            title={
+              isConnected
+                ? "Real-time updates connected"
+                : "Real-time updates disconnected"
+            }
           >
             {isConnected ? (
               <Wifi className="text-green-500" size={16} />
@@ -61,7 +68,7 @@ export function Header({ schedulerRunning = false, schedulerPaused = false }: He
           <button
             onClick={toggle}
             className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300 transition-colors"
-            aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
           >
             {isDark ? <Sun size={20} /> : <Moon size={20} />}
           </button>

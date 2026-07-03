@@ -1,14 +1,14 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/services/api';
-import type { SystemInfo, HealthCheck } from '@/types';
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/services/api";
+import type { SystemInfo, HealthCheck } from "@/types";
 
 /**
  * Query keys for system
  */
 export const systemKeys = {
-  all: ['system'] as const,
-  health: ['system', 'health'] as const,
-  info: ['system', 'info'] as const,
+  all: ["system"] as const,
+  health: ["system", "health"] as const,
+  info: ["system", "info"] as const,
 };
 
 /**
@@ -18,9 +18,9 @@ export function useHealthCheck() {
   return useQuery({
     queryKey: systemKeys.health,
     queryFn: async () => {
-      const response = await api.get<HealthCheck>('/api/v1/system/health');
+      const response = await api.get<HealthCheck>("/api/v1/system/health");
       if (!response.success) {
-        throw new Error(response.error || 'Health check failed');
+        throw new Error(response.error || "Health check failed");
       }
       return response.data;
     },
@@ -39,9 +39,9 @@ export function useSystemInfo() {
   return useQuery({
     queryKey: systemKeys.info,
     queryFn: async () => {
-      const response = await api.get<SystemInfo>('/api/v1/system/info');
+      const response = await api.get<SystemInfo>("/api/v1/system/info");
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch system info');
+        throw new Error(response.error || "Failed to fetch system info");
       }
       return response.data;
     },

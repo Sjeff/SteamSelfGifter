@@ -1,13 +1,13 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
-import { useLogs, useClearLogs } from './useLogs';
-import { api } from '@/services/api';
-import type { ActivityLog } from '@/types';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactNode } from "react";
+import { useLogs, useClearLogs } from "./useLogs";
+import { api } from "@/services/api";
+import type { ActivityLog } from "@/types";
 
 // Mock the API module
-vi.mock('@/services/api', () => ({
+vi.mock("@/services/api", () => ({
   api: {
     get: vi.fn(),
     post: vi.fn(),
@@ -37,31 +37,29 @@ function createWrapper() {
   const queryClient = createTestQueryClient();
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
   };
 }
 
 const mockLog: ActivityLog = {
   id: 1,
-  level: 'info',
-  event_type: 'scan',
-  message: 'Scan completed successfully',
-  details: 'Found 5 new giveaways',
+  level: "info",
+  event_type: "scan",
+  message: "Scan completed successfully",
+  details: "Found 5 new giveaways",
   account_id: 1,
-  account_name: 'Main',
-  created_at: '2024-01-01T00:00:00Z',
+  account_name: "Main",
+  created_at: "2024-01-01T00:00:00Z",
 };
 
-describe('useLogs', () => {
+describe("useLogs", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('useLogs hook', () => {
-    it('should fetch logs successfully', async () => {
+  describe("useLogs hook", () => {
+    it("should fetch logs successfully", async () => {
       // Backend returns { logs, count, limit } which gets transformed
       const backendResponse = {
         logs: [mockLog],
@@ -90,10 +88,10 @@ describe('useLogs', () => {
         limit: 50,
         pages: 1,
       });
-      expect(mockApi.get).toHaveBeenCalledWith('/api/v1/system/logs');
+      expect(mockApi.get).toHaveBeenCalledWith("/api/v1/system/logs");
     });
 
-    it('should fetch with filters', async () => {
+    it("should fetch with filters", async () => {
       // Backend format
       mockApi.get.mockResolvedValueOnce({
         success: true,
@@ -101,8 +99,9 @@ describe('useLogs', () => {
       });
 
       const { result } = renderHook(
-        () => useLogs({ level: 'error', event_type: 'entry', search: 'failed' }),
-        { wrapper: createWrapper() }
+        () =>
+          useLogs({ level: "error", event_type: "entry", search: "failed" }),
+        { wrapper: createWrapper() },
       );
 
       await waitFor(() => {
@@ -110,15 +109,15 @@ describe('useLogs', () => {
       });
 
       expect(mockApi.get).toHaveBeenCalledWith(
-        '/api/v1/system/logs?level=error&event_type=entry&search=failed'
+        "/api/v1/system/logs?level=error&event_type=entry&search=failed",
       );
     });
 
-    it('should handle fetch error', async () => {
+    it("should handle fetch error", async () => {
       mockApi.get.mockResolvedValueOnce({
         success: false,
         data: null,
-        error: 'Failed to fetch logs',
+        error: "Failed to fetch logs",
       });
 
       const { result } = renderHook(() => useLogs(), {
@@ -129,12 +128,12 @@ describe('useLogs', () => {
         expect(result.current.isError).toBe(true);
       });
 
-      expect(result.current.error?.message).toBe('Failed to fetch logs');
+      expect(result.current.error?.message).toBe("Failed to fetch logs");
     });
   });
 
-  describe('useClearLogs hook', () => {
-    it('should clear logs successfully', async () => {
+  describe("useClearLogs hook", () => {
+    it("should clear logs successfully", async () => {
       mockApi.delete.mockResolvedValueOnce({
         success: true,
         data: { deleted: 100 },
@@ -151,14 +150,14 @@ describe('useLogs', () => {
       });
 
       expect(result.current.data).toEqual({ deleted: 100 });
-      expect(mockApi.delete).toHaveBeenCalledWith('/api/v1/system/logs');
+      expect(mockApi.delete).toHaveBeenCalledWith("/api/v1/system/logs");
     });
 
-    it('should handle clear error', async () => {
+    it("should handle clear error", async () => {
       mockApi.delete.mockResolvedValueOnce({
         success: false,
         data: null,
-        error: 'Permission denied',
+        error: "Permission denied",
       });
 
       const { result } = renderHook(() => useClearLogs(), {
@@ -171,7 +170,7 @@ describe('useLogs', () => {
         expect(result.current.isError).toBe(true);
       });
 
-      expect(result.current.error?.message).toBe('Permission denied');
+      expect(result.current.error?.message).toBe("Permission denied");
     });
   });
 });

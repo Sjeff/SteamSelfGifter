@@ -1,21 +1,47 @@
-import { useState, useEffect, useRef } from 'react';
-import { ExternalLink, Eye, EyeOff, Gift, Clock, AlertCircle, Loader2, X, Heart, Trophy, Star, Shield, ShieldAlert, EyeOff as HideIcon, MessageSquare } from 'lucide-react';
-import { SiSteam } from 'react-icons/si';
-import { Card, Button, Badge, Input, CardSkeleton } from '@/components/common';
-import { useInfiniteGiveaways, useEnterGiveaway, useHideGiveaway, useUnhideGiveaway, useRemoveEntry, useCheckGiveawaySafety, useHideOnSteamGifts, usePostComment, type GiveawayFilters } from '@/hooks';
-import { showSuccess, showError } from '@/stores/uiStore';
-import type { Giveaway } from '@/types';
+import { useState, useEffect, useRef } from "react";
+import {
+  ExternalLink,
+  Eye,
+  EyeOff,
+  Gift,
+  Clock,
+  AlertCircle,
+  Loader2,
+  X,
+  Heart,
+  Trophy,
+  Star,
+  Shield,
+  ShieldAlert,
+  EyeOff as HideIcon,
+  MessageSquare,
+} from "lucide-react";
+import { SiSteam } from "react-icons/si";
+import { Card, Button, Badge, Input, CardSkeleton } from "@/components/common";
+import {
+  useInfiniteGiveaways,
+  useEnterGiveaway,
+  useHideGiveaway,
+  useUnhideGiveaway,
+  useRemoveEntry,
+  useCheckGiveawaySafety,
+  useHideOnSteamGifts,
+  usePostComment,
+  type GiveawayFilters,
+} from "@/hooks";
+import { showSuccess, showError } from "@/stores/uiStore";
+import type { Giveaway } from "@/types";
 
 /**
  * Giveaways page
  * Browse, filter, and enter giveaways
  */
 export function Giveaways() {
-  const [filters, setFilters] = useState<Omit<GiveawayFilters, 'page'>>({
-    status: 'active',
+  const [filters, setFilters] = useState<Omit<GiveawayFilters, "page">>({
+    status: "active",
     limit: 20,
   });
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState("");
 
   const {
     data,
@@ -23,7 +49,7 @@ export function Giveaways() {
     error,
     fetchNextPage,
     hasNextPage,
-    isFetchingNextPage
+    isFetchingNextPage,
   } = useInfiniteGiveaways(filters);
   const enterGiveaway = useEnterGiveaway();
   const hideGiveaway = useHideGiveaway();
@@ -34,7 +60,7 @@ export function Giveaways() {
   const postComment = usePostComment();
 
   // Flatten all pages into a single array
-  const allGiveaways = data?.pages.flatMap(page => page.giveaways) ?? [];
+  const allGiveaways = data?.pages.flatMap((page) => page.giveaways) ?? [];
 
   // Ref for intersection observer
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -49,7 +75,7 @@ export function Giveaways() {
           fetchNextPage();
         }
       },
-      { threshold: 0.1 } // Trigger when 10% of the element is visible
+      { threshold: 0.1 }, // Trigger when 10% of the element is visible
     );
 
     const currentRef = loadMoreRef.current;
@@ -66,15 +92,15 @@ export function Giveaways() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setFilters(prev => ({ ...prev, search: searchInput }));
+    setFilters((prev) => ({ ...prev, search: searchInput }));
   };
 
-  const handleStatusFilter = (status: GiveawayFilters['status']) => {
-    setFilters(prev => ({ ...prev, status }));
+  const handleStatusFilter = (status: GiveawayFilters["status"]) => {
+    setFilters((prev) => ({ ...prev, status }));
   };
 
   const handleScoreFilter = (score: number) => {
-    setFilters(prev => ({ ...prev, minScore: score }));
+    setFilters((prev) => ({ ...prev, minScore: score }));
   };
 
   const handleEnter = async (giveaway: Giveaway) => {
@@ -82,7 +108,9 @@ export function Giveaways() {
       await enterGiveaway.mutateAsync(giveaway.code);
       showSuccess(`Entered giveaway for ${giveaway.game_name}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to enter giveaway');
+      showError(
+        err instanceof Error ? err.message : "Failed to enter giveaway",
+      );
     }
   };
 
@@ -91,7 +119,7 @@ export function Giveaways() {
       await hideGiveaway.mutateAsync(giveaway.code);
       showSuccess(`Hidden: ${giveaway.game_name}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to hide giveaway');
+      showError(err instanceof Error ? err.message : "Failed to hide giveaway");
     }
   };
 
@@ -100,7 +128,9 @@ export function Giveaways() {
       await unhideGiveaway.mutateAsync(giveaway.code);
       showSuccess(`Unhidden: ${giveaway.game_name}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to unhide giveaway');
+      showError(
+        err instanceof Error ? err.message : "Failed to unhide giveaway",
+      );
     }
   };
 
@@ -109,7 +139,7 @@ export function Giveaways() {
       await removeEntry.mutateAsync(giveaway.code);
       showSuccess(`Entry removed for ${giveaway.game_name}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to remove entry');
+      showError(err instanceof Error ? err.message : "Failed to remove entry");
     }
   };
 
@@ -117,12 +147,16 @@ export function Giveaways() {
     try {
       const result = await checkSafety.mutateAsync(giveaway.code);
       if (result.is_safe) {
-        showSuccess(`${giveaway.game_name} appears safe (score: ${result.safety_score}%)`);
+        showSuccess(
+          `${giveaway.game_name} appears safe (score: ${result.safety_score}%)`,
+        );
       } else {
-        showError(`${giveaway.game_name} flagged as unsafe! Score: ${result.safety_score}%. Issues: ${result.details.join(', ')}`);
+        showError(
+          `${giveaway.game_name} flagged as unsafe! Score: ${result.safety_score}%. Issues: ${result.details.join(", ")}`,
+        );
       }
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to check safety');
+      showError(err instanceof Error ? err.message : "Failed to check safety");
     }
   };
 
@@ -131,7 +165,9 @@ export function Giveaways() {
       await hideOnSteamGifts.mutateAsync(giveaway.code);
       showSuccess(`Hidden ${giveaway.game_name} on SteamGifts`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to hide on SteamGifts');
+      showError(
+        err instanceof Error ? err.message : "Failed to hide on SteamGifts",
+      );
     }
   };
 
@@ -140,18 +176,20 @@ export function Giveaways() {
       await postComment.mutateAsync({ giveawayCode: giveaway.code });
       showSuccess(`Comment posted on ${giveaway.game_name}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to post comment');
+      showError(err instanceof Error ? err.message : "Failed to post comment");
     }
   };
 
-  const handleSafetyFilter = (safetyFilter: 'all' | 'safe' | 'unsafe') => {
-    setFilters(prev => ({ ...prev, safetyFilter }));
+  const handleSafetyFilter = (safetyFilter: "all" | "safe" | "unsafe") => {
+    setFilters((prev) => ({ ...prev, safetyFilter }));
   };
 
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Giveaways</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Giveaways
+        </h1>
         <Card>
           <div className="flex items-center gap-3 text-red-500">
             <AlertCircle size={24} />
@@ -165,7 +203,9 @@ export function Giveaways() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Giveaways</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Giveaways
+        </h1>
 
         {/* Search */}
         <form onSubmit={handleSearch} className="flex gap-2">
@@ -175,7 +215,9 @@ export function Giveaways() {
             onChange={(e) => setSearchInput(e.target.value)}
             className="w-64"
           />
-          <Button type="submit" variant="secondary">Search</Button>
+          <Button type="submit" variant="secondary">
+            Search
+          </Button>
         </form>
       </div>
 
@@ -183,27 +225,27 @@ export function Giveaways() {
       <div className="flex flex-wrap items-center gap-4">
         <div className="flex flex-wrap gap-2">
           <FilterButton
-            active={filters.status === 'active'}
-            onClick={() => handleStatusFilter('active')}
+            active={filters.status === "active"}
+            onClick={() => handleStatusFilter("active")}
           >
             Active
           </FilterButton>
           <FilterButton
-            active={filters.status === 'wishlist'}
-            onClick={() => handleStatusFilter('wishlist')}
+            active={filters.status === "wishlist"}
+            onClick={() => handleStatusFilter("wishlist")}
           >
             <Heart size={12} className="mr-1 fill-current text-pink-500" />
             Wishlist
           </FilterButton>
           <FilterButton
-            active={filters.status === 'entered'}
-            onClick={() => handleStatusFilter('entered')}
+            active={filters.status === "entered"}
+            onClick={() => handleStatusFilter("entered")}
           >
             Entered
           </FilterButton>
           <FilterButton
-            active={filters.status === 'won'}
-            onClick={() => handleStatusFilter('won')}
+            active={filters.status === "won"}
+            onClick={() => handleStatusFilter("won")}
           >
             <Trophy size={12} className="mr-1 text-yellow-500" />
             Won
@@ -211,7 +253,7 @@ export function Giveaways() {
         </div>
 
         {/* Score Filter - only show for active status */}
-        {filters.status === 'active' && (
+        {filters.status === "active" && (
           <div className="flex items-center gap-3 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg">
             <Star size={16} className="text-yellow-500" />
             <span className="text-sm text-gray-600 dark:text-gray-400 whitespace-nowrap">
@@ -241,13 +283,17 @@ export function Giveaways() {
         )}
 
         {/* Safety Filter */}
-        {filters.status === 'active' && (
+        {filters.status === "active" && (
           <div className="flex items-center gap-2 px-3 py-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg">
             <Shield size={16} className="text-green-500" />
-            <span className="text-sm text-gray-600 dark:text-gray-400">Safety:</span>
+            <span className="text-sm text-gray-600 dark:text-gray-400">
+              Safety:
+            </span>
             <select
-              value={filters.safetyFilter || 'all'}
-              onChange={(e) => handleSafetyFilter(e.target.value as 'all' | 'safe' | 'unsafe')}
+              value={filters.safetyFilter || "all"}
+              onChange={(e) =>
+                handleSafetyFilter(e.target.value as "all" | "safe" | "unsafe")
+              }
               className="text-sm bg-transparent border-none focus:ring-0 text-gray-700 dark:text-gray-300 cursor-pointer"
             >
               <option value="all">All</option>
@@ -261,7 +307,8 @@ export function Giveaways() {
       {/* Results count */}
       {allGiveaways.length > 0 && (
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Showing {allGiveaways.length} giveaway{allGiveaways.length !== 1 ? 's' : ''}
+          Showing {allGiveaways.length} giveaway
+          {allGiveaways.length !== 1 ? "s" : ""}
         </p>
       )}
 
@@ -323,7 +370,6 @@ export function Giveaways() {
           )}
         </>
       )}
-
     </div>
   );
 }
@@ -340,8 +386,8 @@ function FilterButton({ active, onClick, children }: FilterButtonProps) {
       onClick={onClick}
       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
         active
-          ? 'bg-primary-light text-white'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+          ? "bg-primary-light text-white"
+          : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
       }`}
     >
       {children}
@@ -365,7 +411,21 @@ interface GiveawayCardProps {
   isCommenting: boolean;
 }
 
-function GiveawayCard({ giveaway, onEnter, onHide, onUnhide, onRemoveEntry, onCheckSafety, onHideOnSteamGifts, onComment, isEntering, isRemovingEntry, isCheckingSafety, isHidingOnSteamGifts, isCommenting }: GiveawayCardProps) {
+function GiveawayCard({
+  giveaway,
+  onEnter,
+  onHide,
+  onUnhide,
+  onRemoveEntry,
+  onCheckSafety,
+  onHideOnSteamGifts,
+  onComment,
+  isEntering,
+  isRemovingEntry,
+  isCheckingSafety,
+  isHidingOnSteamGifts,
+  isCommenting,
+}: GiveawayCardProps) {
   // Determine if giveaway has ended:
   // - If end_time is set and in the past, it's expired
   // - If end_time is null but it's a won giveaway, treat as ended (historical)
@@ -377,7 +437,7 @@ function GiveawayCard({ giveaway, onEnter, onHide, onUnhide, onRemoveEntry, onCh
     : null;
 
   return (
-    <Card className={giveaway.is_hidden ? 'opacity-60' : ''}>
+    <Card className={giveaway.is_hidden ? "opacity-60" : ""}>
       <div className="space-y-3">
         {/* Game Thumbnail */}
         {giveaway.game_thumbnail && (
@@ -389,7 +449,7 @@ function GiveawayCard({ giveaway, onEnter, onHide, onUnhide, onRemoveEntry, onCh
               onError={(e) => {
                 // Hide image container if it fails to load
                 const parent = e.currentTarget.parentElement;
-                if (parent) parent.style.display = 'none';
+                if (parent) parent.style.display = "none";
               }}
             />
           </div>
@@ -402,20 +462,40 @@ function GiveawayCard({ giveaway, onEnter, onHide, onUnhide, onRemoveEntry, onCh
           </h3>
           <div className="flex gap-1 shrink-0 flex-wrap">
             {giveaway.is_won && (
-              <Badge variant="default" size="sm" className="bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400">
+              <Badge
+                variant="default"
+                size="sm"
+                className="bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400"
+              >
                 <Trophy size={10} className="mr-1" />
                 Won
               </Badge>
             )}
             {giveaway.is_wishlist && (
-              <Badge variant="default" size="sm" className="bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400">
+              <Badge
+                variant="default"
+                size="sm"
+                className="bg-pink-100 text-pink-600 dark:bg-pink-900/30 dark:text-pink-400"
+              >
                 <Heart size={10} className="mr-1 fill-current" />
                 Wishlist
               </Badge>
             )}
-            {giveaway.is_entered && !giveaway.is_won && <Badge variant="success" size="sm">Entered</Badge>}
-            {giveaway.is_hidden && <Badge variant="warning" size="sm">Hidden</Badge>}
-            {isExpired && !giveaway.is_won && <Badge variant="error" size="sm">Expired</Badge>}
+            {giveaway.is_entered && !giveaway.is_won && (
+              <Badge variant="success" size="sm">
+                Entered
+              </Badge>
+            )}
+            {giveaway.is_hidden && (
+              <Badge variant="warning" size="sm">
+                Hidden
+              </Badge>
+            )}
+            {isExpired && !giveaway.is_won && (
+              <Badge variant="error" size="sm">
+                Expired
+              </Badge>
+            )}
           </div>
         </div>
 
@@ -425,9 +505,7 @@ function GiveawayCard({ giveaway, onEnter, onHide, onUnhide, onRemoveEntry, onCh
             <Gift size={14} />
             {giveaway.price}P
           </span>
-          {giveaway.copies > 1 && (
-            <span>{giveaway.copies} copies</span>
-          )}
+          {giveaway.copies > 1 && <span>{giveaway.copies} copies</span>}
           {timeLeft && !isExpired && (
             <span className="flex items-center gap-1">
               <Clock size={14} />
@@ -439,18 +517,25 @@ function GiveawayCard({ giveaway, onEnter, onHide, onUnhide, onRemoveEntry, onCh
         {/* Steam Reviews */}
         {giveaway.game_review_summary && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400">Reviews:</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Reviews:
+            </span>
             <Badge
               variant={
-                giveaway.game_review_summary.includes('Positive') ? 'success' :
-                giveaway.game_review_summary.includes('Mixed') ? 'warning' : 'error'
+                giveaway.game_review_summary.includes("Positive")
+                  ? "success"
+                  : giveaway.game_review_summary.includes("Mixed")
+                    ? "warning"
+                    : "error"
               }
               size="sm"
             >
               {giveaway.game_review_summary}
             </Badge>
             {giveaway.game_total_reviews && (
-              <span className="text-xs text-gray-400">({giveaway.game_total_reviews.toLocaleString()})</span>
+              <span className="text-xs text-gray-400">
+                ({giveaway.game_total_reviews.toLocaleString()})
+              </span>
             )}
           </div>
         )}
@@ -458,7 +543,9 @@ function GiveawayCard({ giveaway, onEnter, onHide, onUnhide, onRemoveEntry, onCh
         {/* Safety Score */}
         {giveaway.is_safe !== null && (
           <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500 dark:text-gray-400">Safety:</span>
+            <span className="text-sm text-gray-500 dark:text-gray-400">
+              Safety:
+            </span>
             {giveaway.is_safe ? (
               <Badge variant="success" size="sm">
                 <Shield size={10} className="mr-1" />
@@ -471,7 +558,9 @@ function GiveawayCard({ giveaway, onEnter, onHide, onUnhide, onRemoveEntry, onCh
               </Badge>
             )}
             {giveaway.safety_score !== null && (
-              <span className="text-xs text-gray-400">({giveaway.safety_score}%)</span>
+              <span className="text-xs text-gray-400">
+                ({giveaway.safety_score}%)
+              </span>
             )}
           </div>
         )}
@@ -587,7 +676,7 @@ function formatTimeLeft(endTime: Date): string {
   const now = new Date();
   const diff = endTime.getTime() - now.getTime();
 
-  if (diff <= 0) return 'Expired';
+  if (diff <= 0) return "Expired";
 
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(hours / 24);

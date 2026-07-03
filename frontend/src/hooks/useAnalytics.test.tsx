@@ -1,19 +1,24 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactNode } from 'react';
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { renderHook, waitFor } from "@testing-library/react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ReactNode } from "react";
 import {
   useDashboard,
   useEntryStats,
   useGiveawayStats,
   useGameStats,
   useEntryTrends,
-} from './useAnalytics';
-import { api } from '@/services/api';
-import type { DashboardData, EntryStats, GiveawayStats, GameStats } from '@/types';
+} from "./useAnalytics";
+import { api } from "@/services/api";
+import type {
+  DashboardData,
+  EntryStats,
+  GiveawayStats,
+  GameStats,
+} from "@/types";
 
 // Mock the API module
-vi.mock('@/services/api', () => ({
+vi.mock("@/services/api", () => ({
   api: {
     get: vi.fn(),
     post: vi.fn(),
@@ -43,9 +48,7 @@ function createWrapper() {
   const queryClient = createTestQueryClient();
   return function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
   };
 }
@@ -54,18 +57,24 @@ const mockDashboard: DashboardData = {
   session: {
     configured: true,
     valid: true,
-    username: 'testuser',
+    username: "testuser",
     error: null,
   },
   points: { current: 500 },
-  entries: { total: 100, today: 5, entered_30d: 80, wins_30d: 2, win_rate: 2.5 },
+  entries: {
+    total: 100,
+    today: 5,
+    entered_30d: 80,
+    wins_30d: 2,
+    win_rate: 2.5,
+  },
   giveaways: { active: 50, entered: 30, wins: 2 },
   safety: { checked: 40, safe: 35, unsafe: 5, unchecked: 10 },
   scheduler: {
     running: true,
     paused: false,
-    last_scan: '2024-01-01T00:00:00Z',
-    next_scan: '2024-01-01T00:30:00Z',
+    last_scan: "2024-01-01T00:00:00Z",
+    next_scan: "2024-01-01T00:30:00Z",
   },
 };
 
@@ -95,13 +104,13 @@ const mockGameStats: GameStats = {
   stale_games: 5,
 };
 
-describe('useAnalytics', () => {
+describe("useAnalytics", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  describe('useDashboard hook', () => {
-    it('should fetch dashboard data successfully', async () => {
+  describe("useDashboard hook", () => {
+    it("should fetch dashboard data successfully", async () => {
       mockApi.get.mockResolvedValueOnce({
         success: true,
         data: mockDashboard,
@@ -116,14 +125,14 @@ describe('useAnalytics', () => {
       });
 
       expect(result.current.data).toEqual(mockDashboard);
-      expect(mockApi.get).toHaveBeenCalledWith('/api/v1/analytics/dashboard');
+      expect(mockApi.get).toHaveBeenCalledWith("/api/v1/analytics/dashboard");
     });
 
-    it('should handle fetch error', async () => {
+    it("should handle fetch error", async () => {
       mockApi.get.mockResolvedValueOnce({
         success: false,
         data: null,
-        error: 'Failed to fetch dashboard',
+        error: "Failed to fetch dashboard",
       });
 
       const { result } = renderHook(() => useDashboard(), {
@@ -134,12 +143,12 @@ describe('useAnalytics', () => {
         expect(result.current.isError).toBe(true);
       });
 
-      expect(result.current.error?.message).toBe('Failed to fetch dashboard');
+      expect(result.current.error?.message).toBe("Failed to fetch dashboard");
     });
   });
 
-  describe('useEntryStats hook', () => {
-    it('should fetch entry stats successfully', async () => {
+  describe("useEntryStats hook", () => {
+    it("should fetch entry stats successfully", async () => {
       // Backend returns different field names that get transformed
       const backendResponse = {
         total_entries: 100,
@@ -166,10 +175,12 @@ describe('useAnalytics', () => {
 
       // Hook transforms backend response to frontend format
       expect(result.current.data).toEqual(mockEntryStats);
-      expect(mockApi.get).toHaveBeenCalledWith('/api/v1/analytics/entries/summary');
+      expect(mockApi.get).toHaveBeenCalledWith(
+        "/api/v1/analytics/entries/summary",
+      );
     });
 
-    it('should fetch with time range filter', async () => {
+    it("should fetch with time range filter", async () => {
       const backendResponse = {
         total_entries: 100,
         successful_entries: 95,
@@ -185,21 +196,22 @@ describe('useAnalytics', () => {
         data: backendResponse,
       });
 
-      const { result } = renderHook(
-        () => useEntryStats({ period: 'week' }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useEntryStats({ period: "week" }), {
+        wrapper: createWrapper(),
+      });
 
       await waitFor(() => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(mockApi.get).toHaveBeenCalledWith('/api/v1/analytics/entries/summary?period=week');
+      expect(mockApi.get).toHaveBeenCalledWith(
+        "/api/v1/analytics/entries/summary?period=week",
+      );
     });
   });
 
-  describe('useGiveawayStats hook', () => {
-    it('should fetch giveaway stats successfully', async () => {
+  describe("useGiveawayStats hook", () => {
+    it("should fetch giveaway stats successfully", async () => {
       // Backend returns different field names that get transformed
       const backendResponse = {
         total_giveaways: 200,
@@ -226,12 +238,14 @@ describe('useAnalytics', () => {
 
       // Hook transforms backend response to frontend format
       expect(result.current.data).toEqual(mockGiveawayStats);
-      expect(mockApi.get).toHaveBeenCalledWith('/api/v1/analytics/giveaways/summary');
+      expect(mockApi.get).toHaveBeenCalledWith(
+        "/api/v1/analytics/giveaways/summary",
+      );
     });
   });
 
-  describe('useGameStats hook', () => {
-    it('should fetch game stats successfully', async () => {
+  describe("useGameStats hook", () => {
+    it("should fetch game stats successfully", async () => {
       mockApi.get.mockResolvedValueOnce({
         success: true,
         data: mockGameStats,
@@ -246,15 +260,17 @@ describe('useAnalytics', () => {
       });
 
       expect(result.current.data).toEqual(mockGameStats);
-      expect(mockApi.get).toHaveBeenCalledWith('/api/v1/analytics/games/summary');
+      expect(mockApi.get).toHaveBeenCalledWith(
+        "/api/v1/analytics/games/summary",
+      );
     });
   });
 
-  describe('useEntryTrends hook', () => {
-    it('should fetch entry trends successfully', async () => {
+  describe("useEntryTrends hook", () => {
+    it("should fetch entry trends successfully", async () => {
       const mockTrends = [
-        { date: '2024-01-01', entries: 10, points_spent: 50 },
-        { date: '2024-01-02', entries: 15, points_spent: 75 },
+        { date: "2024-01-01", entries: 10, points_spent: 50 },
+        { date: "2024-01-02", entries: 15, points_spent: 75 },
       ];
 
       mockApi.get.mockResolvedValueOnce({
@@ -262,7 +278,7 @@ describe('useAnalytics', () => {
         data: mockTrends,
       });
 
-      const { result } = renderHook(() => useEntryTrends('month'), {
+      const { result } = renderHook(() => useEntryTrends("month"), {
         wrapper: createWrapper(),
       });
 
@@ -271,7 +287,9 @@ describe('useAnalytics', () => {
       });
 
       expect(result.current.data).toEqual(mockTrends);
-      expect(mockApi.get).toHaveBeenCalledWith('/api/v1/analytics/entries/trends?period=month');
+      expect(mockApi.get).toHaveBeenCalledWith(
+        "/api/v1/analytics/entries/trends?period=month",
+      );
     });
   });
 });

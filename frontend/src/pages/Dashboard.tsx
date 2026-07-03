@@ -1,20 +1,58 @@
-import { useState, useEffect } from 'react';
-import { Play, Pause, Square, RefreshCw, Zap, Gift, Clock, ExternalLink, X, Trophy, RotateCw, AlertTriangle, Settings, CheckCircle, Shield, ShieldAlert, ShieldQuestion } from 'lucide-react';
-import { SiSteam } from 'react-icons/si';
-import { Card, Button, Badge, Loading, CardSkeleton } from '@/components/common';
-import { useDashboard, useSchedulerStatus, useSchedulerControl, useGiveaways, useRemoveEntry } from '@/hooks';
-import { showSuccess, showError } from '@/stores/uiStore';
-import type { Giveaway, SchedulerJob } from '@/types';
+import { useState, useEffect } from "react";
+import {
+  Play,
+  Pause,
+  Square,
+  RefreshCw,
+  Zap,
+  Gift,
+  Clock,
+  ExternalLink,
+  X,
+  Trophy,
+  RotateCw,
+  AlertTriangle,
+  Settings,
+  CheckCircle,
+  Shield,
+  ShieldAlert,
+  ShieldQuestion,
+} from "lucide-react";
+import { SiSteam } from "react-icons/si";
+import {
+  Card,
+  Button,
+  Badge,
+  Loading,
+  CardSkeleton,
+} from "@/components/common";
+import {
+  useDashboard,
+  useSchedulerStatus,
+  useSchedulerControl,
+  useGiveaways,
+  useRemoveEntry,
+} from "@/hooks";
+import { showSuccess, showError } from "@/stores/uiStore";
+import type { Giveaway, SchedulerJob } from "@/types";
 
 /**
  * Dashboard page
  * Shows scheduler controls, current points, and activity overview
  */
 export function Dashboard() {
-  const { data: dashboard, isLoading: dashboardLoading, error: dashboardError } = useDashboard();
+  const {
+    data: dashboard,
+    isLoading: dashboardLoading,
+    error: dashboardError,
+  } = useDashboard();
   const { data: scheduler, isLoading: schedulerLoading } = useSchedulerStatus();
-  const { start, stop, pause, resume, scan, process, runCycle } = useSchedulerControl();
-  const { data: enteredData, isLoading: enteredLoading } = useGiveaways({ status: 'entered', limit: 10 });
+  const { start, stop, pause, resume, scan, process, runCycle } =
+    useSchedulerControl();
+  const { data: enteredData, isLoading: enteredLoading } = useGiveaways({
+    status: "entered",
+    limit: 10,
+  });
   const removeEntry = useRemoveEntry();
 
   const handleRemoveEntry = async (giveaway: Giveaway) => {
@@ -22,61 +60,75 @@ export function Dashboard() {
       await removeEntry.mutateAsync(giveaway.code);
       showSuccess(`Entry removed for ${giveaway.game_name}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to remove entry');
+      showError(err instanceof Error ? err.message : "Failed to remove entry");
     }
   };
 
   const handleStart = async () => {
     try {
       await start.mutateAsync();
-      showSuccess('Scheduler started');
+      showSuccess("Scheduler started");
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to start scheduler');
+      showError(
+        err instanceof Error ? err.message : "Failed to start scheduler",
+      );
     }
   };
 
   const handleStop = async () => {
     try {
       await stop.mutateAsync();
-      showSuccess('Scheduler stopped');
+      showSuccess("Scheduler stopped");
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to stop scheduler');
+      showError(
+        err instanceof Error ? err.message : "Failed to stop scheduler",
+      );
     }
   };
 
   const handlePause = async () => {
     try {
       await pause.mutateAsync();
-      showSuccess('Scheduler paused');
+      showSuccess("Scheduler paused");
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to pause scheduler');
+      showError(
+        err instanceof Error ? err.message : "Failed to pause scheduler",
+      );
     }
   };
 
   const handleResume = async () => {
     try {
       await resume.mutateAsync();
-      showSuccess('Scheduler resumed');
+      showSuccess("Scheduler resumed");
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to resume scheduler');
+      showError(
+        err instanceof Error ? err.message : "Failed to resume scheduler",
+      );
     }
   };
 
   const handleScan = async () => {
     try {
       const result = await scan.mutateAsync();
-      showSuccess(`Scan complete: ${result.new} new, ${result.updated} updated`);
+      showSuccess(
+        `Scan complete: ${result.new} new, ${result.updated} updated`,
+      );
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to run scan');
+      showError(err instanceof Error ? err.message : "Failed to run scan");
     }
   };
 
   const handleProcess = async () => {
     try {
       const result = await process.mutateAsync();
-      showSuccess(`Processed: ${result.entered} entries, ${result.points_spent} points spent`);
+      showSuccess(
+        `Processed: ${result.entered} entries, ${result.points_spent} points spent`,
+      );
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to process entries');
+      showError(
+        err instanceof Error ? err.message : "Failed to process entries",
+      );
     }
   };
 
@@ -88,24 +140,30 @@ export function Dashboard() {
         `Wishlist: ${result.wishlist.new} new`,
         `Wins: ${result.wins.new_wins} new`,
         `Entries: ${result.entries.entered} entered`,
-      ].join(' | ');
+      ].join(" | ");
       showSuccess(`Cycle complete: ${summary}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to run automation cycle');
+      showError(
+        err instanceof Error ? err.message : "Failed to run automation cycle",
+      );
     }
   };
 
   if (dashboardError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Dashboard
+        </h1>
         <Card>
           <div className="text-center py-8">
             <p className="text-red-500 dark:text-red-400">
               Failed to load dashboard data. Is the backend running?
             </p>
             <p className="text-sm text-gray-500 mt-2">
-              {dashboardError instanceof Error ? dashboardError.message : 'Unknown error'}
+              {dashboardError instanceof Error
+                ? dashboardError.message
+                : "Unknown error"}
             </p>
           </div>
         </Card>
@@ -115,7 +173,9 @@ export function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        Dashboard
+      </h1>
 
       {/* Session Status Banner */}
       {!dashboardLoading && dashboard?.session && (
@@ -123,11 +183,26 @@ export function Dashboard() {
       )}
 
       {/* Scheduler Control Card */}
-      <Card title="Scheduler" actions={
-        <Badge variant={scheduler?.running ? (scheduler?.paused ? 'warning' : 'success') : 'default'}>
-          {scheduler?.running ? (scheduler?.paused ? 'Paused' : 'Running') : 'Stopped'}
-        </Badge>
-      }>
+      <Card
+        title="Scheduler"
+        actions={
+          <Badge
+            variant={
+              scheduler?.running
+                ? scheduler?.paused
+                  ? "warning"
+                  : "success"
+                : "default"
+            }
+          >
+            {scheduler?.running
+              ? scheduler?.paused
+                ? "Paused"
+                : "Running"
+              : "Stopped"}
+          </Badge>
+        }
+      >
         {schedulerLoading ? (
           <Loading text="Loading scheduler status..." />
         ) : (
@@ -202,13 +277,15 @@ export function Dashboard() {
               </Button>
             </div>
 
-            {scheduler?.running && scheduler?.jobs && scheduler.jobs.length > 0 && (
-              <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
-                {scheduler.jobs.map((job) => (
-                  <JobCountdown key={job.id} job={job} />
-                ))}
-              </div>
-            )}
+            {scheduler?.running &&
+              scheduler?.jobs &&
+              scheduler.jobs.length > 0 && (
+                <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
+                  {scheduler.jobs.map((job) => (
+                    <JobCountdown key={job.id} job={job} />
+                  ))}
+                </div>
+              )}
           </div>
         )}
       </Card>
@@ -278,11 +355,13 @@ export function Dashboard() {
               icon={<Trophy size={24} />}
             />
             <Card>
-              <p className="text-sm text-gray-500 dark:text-gray-400">Last Scan</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Last Scan
+              </p>
               <p className="text-lg font-semibold text-gray-900 dark:text-white">
                 {dashboard?.scheduler?.last_scan
                   ? new Date(dashboard.scheduler.last_scan).toLocaleString()
-                  : 'Never'}
+                  : "Never"}
               </p>
             </Card>
           </>
@@ -328,9 +407,12 @@ export function Dashboard() {
       </div>
 
       {/* Entered Giveaways List */}
-      <Card title="Entered Giveaways" actions={
-        <Badge variant="default">{enteredData?.total ?? 0} total</Badge>
-      }>
+      <Card
+        title="Entered Giveaways"
+        actions={
+          <Badge variant="default">{enteredData?.total ?? 0} total</Badge>
+        }
+      >
         {enteredLoading ? (
           <Loading text="Loading entered giveaways..." />
         ) : !enteredData?.items?.length ? (
@@ -349,7 +431,10 @@ export function Dashboard() {
             ))}
             {(enteredData.total ?? 0) > 10 && (
               <p className="text-sm text-gray-500 dark:text-gray-400 text-center pt-2">
-                <a href="/giveaways?status=entered" className="text-primary-light hover:underline">
+                <a
+                  href="/giveaways?status=entered"
+                  className="text-primary-light hover:underline"
+                >
                   View all {enteredData.total} entered giveaways →
                 </a>
               </p>
@@ -365,30 +450,45 @@ interface StatCardProps {
   label: string;
   value: number | string;
   subLabel?: string;
-  color?: 'blue' | 'green' | 'purple' | 'orange' | 'gray' | 'teal' | 'yellow';
+  color?: "blue" | "green" | "purple" | "orange" | "gray" | "teal" | "yellow";
   href?: string;
   icon?: React.ReactNode;
 }
 
-function StatCard({ label, value, subLabel, color = 'gray', href, icon }: StatCardProps) {
+function StatCard({
+  label,
+  value,
+  subLabel,
+  color = "gray",
+  href,
+  icon,
+}: StatCardProps) {
   const colorClasses = {
-    blue: 'text-blue-600 dark:text-blue-400',
-    green: 'text-green-600 dark:text-green-400',
-    purple: 'text-purple-600 dark:text-purple-400',
-    orange: 'text-orange-600 dark:text-orange-400',
-    gray: 'text-gray-900 dark:text-white',
-    teal: 'text-teal-600 dark:text-teal-400',
-    yellow: 'text-yellow-600 dark:text-yellow-400',
+    blue: "text-blue-600 dark:text-blue-400",
+    green: "text-green-600 dark:text-green-400",
+    purple: "text-purple-600 dark:text-purple-400",
+    orange: "text-orange-600 dark:text-orange-400",
+    gray: "text-gray-900 dark:text-white",
+    teal: "text-teal-600 dark:text-teal-400",
+    yellow: "text-yellow-600 dark:text-yellow-400",
   };
 
   const content = (
-    <Card className={href ? 'hover:ring-2 hover:ring-primary-light/50 transition-all cursor-pointer' : ''}>
+    <Card
+      className={
+        href
+          ? "hover:ring-2 hover:ring-primary-light/50 transition-all cursor-pointer"
+          : ""
+      }
+    >
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
           <p className={`text-3xl font-bold ${colorClasses[color]}`}>{value}</p>
           {subLabel && (
-            <p className="text-xs text-gray-400 dark:text-gray-500">{subLabel}</p>
+            <p className="text-xs text-gray-400 dark:text-gray-500">
+              {subLabel}
+            </p>
           )}
         </div>
         {icon && <div className={colorClasses[color]}>{icon}</div>}
@@ -409,14 +509,20 @@ interface EnteredGiveawayRowProps {
   isRemoving: boolean;
 }
 
-function EnteredGiveawayRow({ giveaway, onRemoveEntry, isRemoving }: EnteredGiveawayRowProps) {
+function EnteredGiveawayRow({
+  giveaway,
+  onRemoveEntry,
+  isRemoving,
+}: EnteredGiveawayRowProps) {
   // Determine if giveaway has ended:
   // - If end_time is set and in the past, it's expired
   // - If end_time is null but it's a won giveaway, treat as ended (historical)
   const isExpired = giveaway.end_time
     ? new Date(giveaway.end_time) < new Date()
     : giveaway.is_won; // No end_time + won = historical giveaway
-  const timeLeft = giveaway.end_time ? formatTimeLeft(new Date(giveaway.end_time)) : null;
+  const timeLeft = giveaway.end_time
+    ? formatTimeLeft(new Date(giveaway.end_time))
+    : null;
 
   return (
     <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
@@ -427,7 +533,7 @@ function EnteredGiveawayRow({ giveaway, onRemoveEntry, isRemoving }: EnteredGive
           alt={giveaway.game_name}
           className="w-16 h-10 object-cover rounded-sm"
           onError={(e) => {
-            e.currentTarget.style.display = 'none';
+            e.currentTarget.style.display = "none";
           }}
         />
       )}
@@ -445,14 +551,17 @@ function EnteredGiveawayRow({ giveaway, onRemoveEntry, isRemoving }: EnteredGive
           {timeLeft && (
             <span className="flex items-center gap-1">
               <Clock size={12} />
-              {isExpired ? 'Ended' : timeLeft}
+              {isExpired ? "Ended" : timeLeft}
             </span>
           )}
           {giveaway.game_review_summary && (
             <Badge
               variant={
-                giveaway.game_review_summary.includes('Positive') ? 'success' :
-                giveaway.game_review_summary.includes('Mixed') ? 'warning' : 'error'
+                giveaway.game_review_summary.includes("Positive")
+                  ? "success"
+                  : giveaway.game_review_summary.includes("Mixed")
+                    ? "warning"
+                    : "error"
               }
               size="sm"
             >
@@ -477,14 +586,22 @@ function EnteredGiveawayRow({ giveaway, onRemoveEntry, isRemoving }: EnteredGive
 
       {/* Status */}
       {giveaway.is_won ? (
-        <Badge variant="default" size="sm" className="bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400">
+        <Badge
+          variant="default"
+          size="sm"
+          className="bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400"
+        >
           <Trophy size={10} className="mr-1" />
           Won
         </Badge>
       ) : isExpired ? (
-        <Badge variant="error" size="sm">Ended</Badge>
+        <Badge variant="error" size="sm">
+          Ended
+        </Badge>
       ) : (
-        <Badge variant="success" size="sm">Active</Badge>
+        <Badge variant="success" size="sm">
+          Active
+        </Badge>
       )}
 
       {/* External Links */}
@@ -519,11 +636,11 @@ interface JobCountdownProps {
 }
 
 function JobCountdown({ job }: JobCountdownProps) {
-  const [countdown, setCountdown] = useState<string>('');
+  const [countdown, setCountdown] = useState<string>("");
 
   useEffect(() => {
     if (!job.next_run) {
-      setCountdown('Not scheduled');
+      setCountdown("Not scheduled");
       return;
     }
 
@@ -533,7 +650,7 @@ function JobCountdown({ job }: JobCountdownProps) {
       const diff = nextRun.getTime() - now.getTime();
 
       if (diff <= 0) {
-        setCountdown('Running now...');
+        setCountdown("Running now...");
         return;
       }
 
@@ -556,16 +673,26 @@ function JobCountdown({ job }: JobCountdownProps) {
     return () => clearInterval(interval);
   }, [job.next_run]);
 
-  const jobLabel = job.name === 'scan_giveaways' ? 'Next scan' :
-                   job.name === 'process_giveaways' ? 'Next process' :
-                   job.name === 'Automation cycle' ? 'Next scan' :
-                   job.name === 'Safety check' ? 'Safety check' :
-                   job.name === 'Win check' ? 'Win check' : job.name;
+  const jobLabel =
+    job.name === "scan_giveaways"
+      ? "Next scan"
+      : job.name === "process_giveaways"
+        ? "Next process"
+        : job.name === "Automation cycle"
+          ? "Next scan"
+          : job.name === "Safety check"
+            ? "Safety check"
+            : job.name === "Win check"
+              ? "Win check"
+              : job.name;
 
   return (
     <span className="flex items-center gap-1">
       <Clock size={14} />
-      {jobLabel}: <span className="font-medium text-gray-700 dark:text-gray-200">{countdown}</span>
+      {jobLabel}:{" "}
+      <span className="font-medium text-gray-700 dark:text-gray-200">
+        {countdown}
+      </span>
     </span>
   );
 }
@@ -574,7 +701,7 @@ function formatTimeLeft(endTime: Date): string {
   const now = new Date();
   const diff = endTime.getTime() - now.getTime();
 
-  if (diff <= 0) return 'Ended';
+  if (diff <= 0) return "Ended";
 
   const hours = Math.floor(diff / (1000 * 60 * 60));
   const days = Math.floor(hours / 24);
@@ -607,8 +734,9 @@ function SessionStatusBanner({ session }: SessionStatusBannerProps) {
               Session Not Configured
             </h3>
             <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
-              To start using SteamSelfGifter, you need to configure your SteamGifts session.
-              Go to Accounts and enter your PHPSESSID cookie from SteamGifts.com.
+              To start using SteamSelfGifter, you need to configure your
+              SteamGifts session. Go to Accounts and enter your PHPSESSID cookie
+              from SteamGifts.com.
             </p>
             <a
               href="/accounts?setup=true"
@@ -634,8 +762,9 @@ function SessionStatusBanner({ session }: SessionStatusBannerProps) {
               Session Invalid or Expired
             </h3>
             <p className="text-sm text-red-700 dark:text-red-300 mt-1">
-              {session.error || 'Your SteamGifts session has expired or become invalid.'}
-              {' '}Please update your PHPSESSID cookie in Settings.
+              {session.error ||
+                "Your SteamGifts session has expired or become invalid."}{" "}
+              Please update your PHPSESSID cookie in Settings.
             </p>
             <a
               href="/settings"

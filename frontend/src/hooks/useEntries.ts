@@ -1,16 +1,16 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/services/api';
-import type { EntryWithGiveaway } from '@/types';
-import { useAccountStore } from '@/stores/accountStore';
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/services/api";
+import type { EntryWithGiveaway } from "@/types";
+import { useAccountStore } from "@/stores/accountStore";
 
 /**
  * Query keys for entries
  */
 export const entryKeys = {
-  all: ['entries'] as const,
-  lists: () => [...entryKeys.all, 'list'] as const,
+  all: ["entries"] as const,
+  lists: () => [...entryKeys.all, "list"] as const,
   list: (filters: EntryFilters) => [...entryKeys.lists(), filters] as const,
-  details: () => [...entryKeys.all, 'detail'] as const,
+  details: () => [...entryKeys.all, "detail"] as const,
   detail: (id: number) => [...entryKeys.details(), id] as const,
 };
 
@@ -18,8 +18,8 @@ export const entryKeys = {
  * Filter options for entries
  */
 export interface EntryFilters {
-  status?: 'success' | 'failed' | 'pending' | 'all';
-  type?: 'manual' | 'auto' | 'wishlist' | 'all';
+  status?: "success" | "failed" | "pending" | "all";
+  type?: "manual" | "auto" | "wishlist" | "all";
   giveaway_id?: number;
   from_date?: string;
   to_date?: string;
@@ -58,33 +58,34 @@ export function useEntries(filters: EntryFilters = {}) {
     queryKey: [...entryKeys.list(filters), effectiveAccountId],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (effectiveAccountId) params.set('account_id', String(effectiveAccountId));
+      if (effectiveAccountId)
+        params.set("account_id", String(effectiveAccountId));
 
-      if (filters.status && filters.status !== 'all') {
-        params.set('status', filters.status);
+      if (filters.status && filters.status !== "all") {
+        params.set("status", filters.status);
       }
-      if (filters.type && filters.type !== 'all') {
-        params.set('entry_type', filters.type);
+      if (filters.type && filters.type !== "all") {
+        params.set("entry_type", filters.type);
       }
       if (filters.giveaway_id) {
-        params.set('giveaway_id', String(filters.giveaway_id));
+        params.set("giveaway_id", String(filters.giveaway_id));
       }
       if (filters.from_date) {
-        params.set('from_date', filters.from_date);
+        params.set("from_date", filters.from_date);
       }
       if (filters.to_date) {
-        params.set('to_date', filters.to_date);
+        params.set("to_date", filters.to_date);
       }
       if (filters.limit) {
-        params.set('limit', String(filters.limit));
+        params.set("limit", String(filters.limit));
       }
 
       const queryString = params.toString();
-      const endpoint = `/api/v1/entries/${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `/api/v1/entries/${queryString ? `?${queryString}` : ""}`;
 
       const response = await api.get<EntriesApiResponse>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch entries');
+        throw new Error(response.error || "Failed to fetch entries");
       }
 
       // Transform backend response to frontend format
@@ -110,9 +111,11 @@ export function useEntry(id: number) {
   return useQuery({
     queryKey: entryKeys.detail(id),
     queryFn: async () => {
-      const response = await api.get<EntryWithGiveaway>(`/api/v1/entries/${id}`);
+      const response = await api.get<EntryWithGiveaway>(
+        `/api/v1/entries/${id}`,
+      );
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch entry');
+        throw new Error(response.error || "Failed to fetch entry");
       }
       return response.data;
     },

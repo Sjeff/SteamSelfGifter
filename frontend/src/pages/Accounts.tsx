@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router';
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router";
 import {
   Plus,
   Trash2,
@@ -18,9 +18,9 @@ import {
   Check,
   X,
   Settings2,
-} from 'lucide-react';
-import { clsx } from 'clsx';
-import { Toggle, Input } from '@/components/common';
+} from "lucide-react";
+import { clsx } from "clsx";
+import { Toggle, Input } from "@/components/common";
 import {
   useAccounts,
   useAccount,
@@ -33,16 +33,16 @@ import {
   useStartAccountAutomation,
   useStopAccountAutomation,
   useUpdateAccount,
-} from '@/hooks/useAccounts';
-import { useAccountStore } from '@/stores/accountStore';
-import { showSuccess, showError } from '@/stores/uiStore';
-import type { Account, AccountListItem } from '@/types';
+} from "@/hooks/useAccounts";
+import { useAccountStore } from "@/stores/accountStore";
+import { showSuccess, showError } from "@/stores/uiStore";
+import type { Account, AccountListItem } from "@/types";
 
 // ─── Create Account Form ────────────────────────────────────────────────────
 
 function CreateAccountForm({ onClose }: { onClose: () => void }) {
-  const [name, setName] = useState('');
-  const [phpsessid, setPhpsessid] = useState('');
+  const [name, setName] = useState("");
+  const [phpsessid, setPhpsessid] = useState("");
   const createAccount = useCreateAccount();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -55,15 +55,24 @@ function CreateAccountForm({ onClose }: { onClose: () => void }) {
       showSuccess(`Account "${name}" created`);
       onClose();
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to create account');
+      showError(
+        err instanceof Error ? err.message : "Failed to create account",
+      );
     }
   }
 
   return (
-    <form onSubmit={handleSubmit} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50 space-y-3">
-      <h3 className="font-semibold text-gray-800 dark:text-gray-100">New account</h3>
+    <form
+      onSubmit={handleSubmit}
+      className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50 space-y-3"
+    >
+      <h3 className="font-semibold text-gray-800 dark:text-gray-100">
+        New account
+      </h3>
       <div>
-        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">Name *</label>
+        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          Name *
+        </label>
         <input
           type="text"
           value={name}
@@ -74,7 +83,9 @@ function CreateAccountForm({ onClose }: { onClose: () => void }) {
         />
       </div>
       <div>
-        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">PHPSESSID (optional)</label>
+        <label className="block text-sm text-gray-600 dark:text-gray-400 mb-1">
+          PHPSESSID (optional)
+        </label>
         <input
           type="password"
           value={phpsessid}
@@ -89,7 +100,9 @@ function CreateAccountForm({ onClose }: { onClose: () => void }) {
           disabled={createAccount.isPending || !name.trim()}
           className="px-4 py-2 rounded-lg bg-primary-light dark:bg-primary-dark text-white text-sm disabled:opacity-50 flex items-center gap-2"
         >
-          {createAccount.isPending && <Loader2 size={14} className="animate-spin" />}
+          {createAccount.isPending && (
+            <Loader2 size={14} className="animate-spin" />
+          )}
           Create
         </button>
         <button
@@ -106,9 +119,17 @@ function CreateAccountForm({ onClose }: { onClose: () => void }) {
 
 // ─── Credentials Form ───────────────────────────────────────────────────────
 
-function CredentialsForm({ accountId, currentUserAgent, onClose }: { accountId: number; currentUserAgent?: string; onClose: () => void }) {
-  const [phpsessid, setPhpsessid] = useState('');
-  const [userAgent, setUserAgent] = useState(currentUserAgent ?? '');
+function CredentialsForm({
+  accountId,
+  currentUserAgent,
+  onClose,
+}: {
+  accountId: number;
+  currentUserAgent?: string;
+  onClose: () => void;
+}) {
+  const [phpsessid, setPhpsessid] = useState("");
+  const [userAgent, setUserAgent] = useState(currentUserAgent ?? "");
   const setCredentials = useSetAccountCredentials(accountId);
   const testSession = useTestAccountSession(accountId);
 
@@ -119,10 +140,12 @@ function CredentialsForm({ accountId, currentUserAgent, onClose }: { accountId: 
         phpsessid: phpsessid.trim(),
         user_agent: userAgent.trim() || undefined,
       });
-      showSuccess('Credentials saved');
+      showSuccess("Credentials saved");
       onClose();
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to save credentials');
+      showError(
+        err instanceof Error ? err.message : "Failed to save credentials",
+      );
     }
   }
 
@@ -130,19 +153,26 @@ function CredentialsForm({ accountId, currentUserAgent, onClose }: { accountId: 
     try {
       const result = await testSession.mutateAsync();
       if (result.valid) {
-        showSuccess(`Session valid — ${result.username ?? 'unknown'} (${result.points ?? '?'} pts)`);
+        showSuccess(
+          `Session valid — ${result.username ?? "unknown"} (${result.points ?? "?"} pts)`,
+        );
       } else {
-        showError(`Session invalid: ${result.error ?? 'unknown error'}`);
+        showError(`Session invalid: ${result.error ?? "unknown error"}`);
       }
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Test failed');
+      showError(err instanceof Error ? err.message : "Test failed");
     }
   }
 
   return (
-    <form onSubmit={handleSave} className="mt-3 space-y-2 pl-4 border-l-2 border-primary-light/30">
+    <form
+      onSubmit={handleSave}
+      className="mt-3 space-y-2 pl-4 border-l-2 border-primary-light/30"
+    >
       <div>
-        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">New PHPSESSID</label>
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+          New PHPSESSID
+        </label>
         <input
           type="password"
           value={phpsessid}
@@ -153,7 +183,9 @@ function CredentialsForm({ accountId, currentUserAgent, onClose }: { accountId: 
         />
       </div>
       <div>
-        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">User Agent (optional)</label>
+        <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">
+          User Agent (optional)
+        </label>
         <input
           type="text"
           value={userAgent}
@@ -168,7 +200,9 @@ function CredentialsForm({ accountId, currentUserAgent, onClose }: { accountId: 
           disabled={setCredentials.isPending || !phpsessid.trim()}
           className="px-3 py-1.5 rounded-lg bg-primary-light dark:bg-primary-dark text-white text-xs disabled:opacity-50 flex items-center gap-1"
         >
-          {setCredentials.isPending && <Loader2 size={12} className="animate-spin" />}
+          {setCredentials.isPending && (
+            <Loader2 size={12} className="animate-spin" />
+          )}
           Save
         </button>
         <button
@@ -177,7 +211,11 @@ function CredentialsForm({ accountId, currentUserAgent, onClose }: { accountId: 
           disabled={testSession.isPending}
           className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-1"
         >
-          {testSession.isPending ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+          {testSession.isPending ? (
+            <Loader2 size={12} className="animate-spin" />
+          ) : (
+            <RefreshCw size={12} />
+          )}
           Test current
         </button>
         <button
@@ -196,21 +234,21 @@ function CredentialsForm({ accountId, currentUserAgent, onClose }: { accountId: 
 
 type SettingsForm = Pick<
   Account,
-  | 'dlc_enabled'
-  | 'safety_check_enabled'
-  | 'auto_hide_unsafe'
-  | 'autojoin_enabled'
-  | 'autojoin_start_at'
-  | 'autojoin_stop_at'
-  | 'autojoin_min_price'
-  | 'autojoin_min_score'
-  | 'autojoin_min_reviews'
-  | 'autojoin_max_game_age'
-  | 'scan_interval_minutes'
-  | 'max_scan_pages'
-  | 'max_entries_per_cycle'
-  | 'entry_delay_min'
-  | 'entry_delay_max'
+  | "dlc_enabled"
+  | "safety_check_enabled"
+  | "auto_hide_unsafe"
+  | "autojoin_enabled"
+  | "autojoin_start_at"
+  | "autojoin_stop_at"
+  | "autojoin_min_price"
+  | "autojoin_min_score"
+  | "autojoin_min_reviews"
+  | "autojoin_max_game_age"
+  | "scan_interval_minutes"
+  | "max_scan_pages"
+  | "max_entries_per_cycle"
+  | "entry_delay_min"
+  | "entry_delay_max"
 >;
 
 function SectionHeader({ title }: { title: string }) {
@@ -251,7 +289,7 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
   }, [account]);
 
   function set<K extends keyof SettingsForm>(field: K, value: SettingsForm[K]) {
-    setForm((prev) => prev ? { ...prev, [field]: value } : prev);
+    setForm((prev) => (prev ? { ...prev, [field]: value } : prev));
     setHasChanges(true);
   }
 
@@ -259,10 +297,10 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
     if (!form) return;
     try {
       await updateAccount.mutateAsync(form);
-      showSuccess('Settings saved');
+      showSuccess("Settings saved");
       setHasChanges(false);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to save settings');
+      showError(err instanceof Error ? err.message : "Failed to save settings");
     }
   }
 
@@ -283,13 +321,13 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
         label="Include DLC"
         description="Scan and enter giveaways for DLC content"
         checked={form.dlc_enabled}
-        onChange={(v) => set('dlc_enabled', v)}
+        onChange={(v) => set("dlc_enabled", v)}
       />
       <Toggle
         label="Enable Auto-Join"
         description="Automatically enter eligible giveaways"
         checked={form.autojoin_enabled}
-        onChange={(v) => set('autojoin_enabled', v)}
+        onChange={(v) => set("autojoin_enabled", v)}
       />
 
       {/* Safety */}
@@ -298,13 +336,13 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
         label="Trap Detection"
         description="Check giveaways for warning words before auto-entering"
         checked={form.safety_check_enabled}
-        onChange={(v) => set('safety_check_enabled', v)}
+        onChange={(v) => set("safety_check_enabled", v)}
       />
       <Toggle
         label="Auto-Hide Unsafe"
         description="Automatically hide detected trap giveaways on SteamGifts"
         checked={form.auto_hide_unsafe}
-        onChange={(v) => set('auto_hide_unsafe', v)}
+        onChange={(v) => set("auto_hide_unsafe", v)}
       />
 
       {/* Auto-Join Rules */}
@@ -314,42 +352,57 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
           label="Start at Points"
           type="number"
           value={form.autojoin_start_at}
-          onChange={(e) => set('autojoin_start_at', parseInt(e.target.value) || 0)}
+          onChange={(e) =>
+            set("autojoin_start_at", parseInt(e.target.value) || 0)
+          }
           helperText="Auto-join when points ≥ this"
         />
         <Input
           label="Stop at Points"
           type="number"
           value={form.autojoin_stop_at}
-          onChange={(e) => set('autojoin_stop_at', parseInt(e.target.value) || 0)}
+          onChange={(e) =>
+            set("autojoin_stop_at", parseInt(e.target.value) || 0)
+          }
           helperText="Stop when points drop below this"
         />
         <Input
           label="Min Giveaway Cost (points)"
           type="number"
           value={form.autojoin_min_price}
-          onChange={(e) => set('autojoin_min_price', parseInt(e.target.value) || 0)}
+          onChange={(e) =>
+            set("autojoin_min_price", parseInt(e.target.value) || 0)
+          }
           helperText="Minimum giveaway cost in SteamGifts points"
         />
         <Input
           label="Min Review Score"
           type="number"
           value={form.autojoin_min_score}
-          onChange={(e) => set('autojoin_min_score', parseInt(e.target.value) || 0)}
+          onChange={(e) =>
+            set("autojoin_min_score", parseInt(e.target.value) || 0)
+          }
           helperText="Score 0–10"
         />
         <Input
           label="Min Review Count"
           type="number"
           value={form.autojoin_min_reviews}
-          onChange={(e) => set('autojoin_min_reviews', parseInt(e.target.value) || 0)}
+          onChange={(e) =>
+            set("autojoin_min_reviews", parseInt(e.target.value) || 0)
+          }
           helperText="Minimum Steam reviews"
         />
         <Input
           label="Max Game Age (years)"
           type="number"
-          value={form.autojoin_max_game_age ?? ''}
-          onChange={(e) => set('autojoin_max_game_age', e.target.value ? parseInt(e.target.value) : null)}
+          value={form.autojoin_max_game_age ?? ""}
+          onChange={(e) =>
+            set(
+              "autojoin_max_game_age",
+              e.target.value ? parseInt(e.target.value) : null,
+            )
+          }
           helperText="Empty = no limit"
         />
       </div>
@@ -361,21 +414,28 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
           label="Scan Interval (min)"
           type="number"
           value={form.scan_interval_minutes}
-          onChange={(e) => set('scan_interval_minutes', parseInt(e.target.value) || 30)}
+          onChange={(e) =>
+            set("scan_interval_minutes", parseInt(e.target.value) || 30)
+          }
           helperText="How often to scan"
         />
         <Input
           label="Max Scan Pages"
           type="number"
           value={form.max_scan_pages}
-          onChange={(e) => set('max_scan_pages', parseInt(e.target.value) || 3)}
+          onChange={(e) => set("max_scan_pages", parseInt(e.target.value) || 3)}
           helperText="Pages per cycle"
         />
         <Input
           label="Max Entries / Cycle"
           type="number"
-          value={form.max_entries_per_cycle ?? ''}
-          onChange={(e) => set('max_entries_per_cycle', e.target.value ? parseInt(e.target.value) : null)}
+          value={form.max_entries_per_cycle ?? ""}
+          onChange={(e) =>
+            set(
+              "max_entries_per_cycle",
+              e.target.value ? parseInt(e.target.value) : null,
+            )
+          }
           helperText="Empty = unlimited"
         />
       </div>
@@ -387,14 +447,18 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
           label="Min Delay (sec)"
           type="number"
           value={form.entry_delay_min}
-          onChange={(e) => set('entry_delay_min', parseInt(e.target.value) || 0)}
+          onChange={(e) =>
+            set("entry_delay_min", parseInt(e.target.value) || 0)
+          }
           helperText="Min delay between entries"
         />
         <Input
           label="Max Delay (sec)"
           type="number"
           value={form.entry_delay_max}
-          onChange={(e) => set('entry_delay_max', parseInt(e.target.value) || 0)}
+          onChange={(e) =>
+            set("entry_delay_max", parseInt(e.target.value) || 0)
+          }
           helperText="Max delay between entries"
         />
       </div>
@@ -407,7 +471,9 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
             disabled={updateAccount.isPending}
             className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-light dark:bg-primary-dark text-white text-sm disabled:opacity-50"
           >
-            {updateAccount.isPending && <Loader2 size={14} className="animate-spin" />}
+            {updateAccount.isPending && (
+              <Loader2 size={14} className="animate-spin" />
+            )}
             Save settings
           </button>
         </div>
@@ -418,7 +484,13 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
 
 // ─── Account Row ────────────────────────────────────────────────────────────
 
-function AccountRow({ account, defaultOpen = false }: { account: AccountListItem; defaultOpen?: boolean }) {
+function AccountRow({
+  account,
+  defaultOpen = false,
+}: {
+  account: AccountListItem;
+  defaultOpen?: boolean;
+}) {
   const [expanded, setExpanded] = useState(defaultOpen);
   const [showCredentials, setShowCredentials] = useState(defaultOpen);
   const [showSettings, setShowSettings] = useState(false);
@@ -435,13 +507,20 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
   const updateAccount = useUpdateAccount(account.id);
 
   async function handleDelete() {
-    if (!confirm(`Delete account "${account.name}"? This is a soft delete (data is kept).`)) return;
+    if (
+      !confirm(
+        `Delete account "${account.name}"? This is a soft delete (data is kept).`,
+      )
+    )
+      return;
     try {
       await deleteAccount.mutateAsync(account.id);
       if (selectedAccountId === account.id) setSelectedAccountId(null);
       showSuccess(`Account "${account.name}" deleted`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to delete account');
+      showError(
+        err instanceof Error ? err.message : "Failed to delete account",
+      );
     }
   }
 
@@ -450,17 +529,19 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
       await setDefault.mutateAsync(account.id);
       showSuccess(`"${account.name}" set as default`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to set default');
+      showError(err instanceof Error ? err.message : "Failed to set default");
     }
   }
 
   async function handleClearCredentials() {
-    if (!confirm('Clear credentials for this account?')) return;
+    if (!confirm("Clear credentials for this account?")) return;
     try {
       await clearCredentials.mutateAsync();
-      showSuccess('Credentials cleared');
+      showSuccess("Credentials cleared");
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to clear credentials');
+      showError(
+        err instanceof Error ? err.message : "Failed to clear credentials",
+      );
     }
   }
 
@@ -471,14 +552,16 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
         showSuccess(`Automation stopped for "${account.name}"`);
       } else {
         if (!account.has_credentials) {
-          showError('Set credentials before starting automation');
+          showError("Set credentials before starting automation");
           return;
         }
         await startAutomation.mutateAsync(account.id);
         showSuccess(`Automation started for "${account.name}"`);
       }
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to toggle automation');
+      showError(
+        err instanceof Error ? err.message : "Failed to toggle automation",
+      );
     }
   }
 
@@ -486,12 +569,14 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
     try {
       const result = await testSession.mutateAsync();
       if (result.valid) {
-        showSuccess(`Valid — ${result.username ?? 'unknown'} (${result.points ?? '?'} pts)`);
+        showSuccess(
+          `Valid — ${result.username ?? "unknown"} (${result.points ?? "?"} pts)`,
+        );
       } else {
-        showError(`Invalid session: ${result.error ?? 'unknown error'}`);
+        showError(`Invalid session: ${result.error ?? "unknown error"}`);
       }
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Test failed');
+      showError(err instanceof Error ? err.message : "Test failed");
     }
   }
 
@@ -507,13 +592,15 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
       showSuccess(`Account renamed to "${trimmed}"`);
       setIsRenaming(false);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to rename account');
+      showError(
+        err instanceof Error ? err.message : "Failed to rename account",
+      );
     }
   }
 
   function handleRenameKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') handleRenameConfirm();
-    if (e.key === 'Escape') {
+    if (e.key === "Enter") handleRenameConfirm();
+    if (e.key === "Escape") {
       setIsRenaming(false);
       setRenameValue(account.name);
     }
@@ -525,10 +612,10 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
   return (
     <div
       className={clsx(
-        'border rounded-lg overflow-hidden transition-colors',
+        "border rounded-lg overflow-hidden transition-colors",
         isSelected
-          ? 'border-primary-light dark:border-primary-dark'
-          : 'border-gray-200 dark:border-gray-700'
+          ? "border-primary-light dark:border-primary-dark"
+          : "border-gray-200 dark:border-gray-700",
       )}
     >
       {/* Header row */}
@@ -537,10 +624,10 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
         <button
           onClick={() => setSelectedAccountId(account.id)}
           className={clsx(
-            'w-4 h-4 rounded-full border-2 shrink-0 transition-colors',
+            "w-4 h-4 rounded-full border-2 shrink-0 transition-colors",
             isSelected
-              ? 'border-primary-light dark:border-primary-dark bg-primary-light dark:bg-primary-dark'
-              : 'border-gray-400 dark:border-gray-500 hover:border-primary-light'
+              ? "border-primary-light dark:border-primary-dark bg-primary-light dark:bg-primary-dark"
+              : "border-gray-400 dark:border-gray-500 hover:border-primary-light",
           )}
           title="Select this account for the dashboard"
         />
@@ -563,10 +650,17 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
                 className="p-0.5 text-green-500 hover:text-green-600"
                 title="Confirm rename"
               >
-                {updateAccount.isPending ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                {updateAccount.isPending ? (
+                  <Loader2 size={14} className="animate-spin" />
+                ) : (
+                  <Check size={14} />
+                )}
               </button>
               <button
-                onClick={() => { setIsRenaming(false); setRenameValue(account.name); }}
+                onClick={() => {
+                  setIsRenaming(false);
+                  setRenameValue(account.name);
+                }}
                 className="p-0.5 text-gray-400 hover:text-gray-600"
                 title="Cancel"
               >
@@ -579,7 +673,10 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
                 {account.name}
               </span>
               <button
-                onClick={() => { setIsRenaming(true); setRenameValue(account.name); }}
+                onClick={() => {
+                  setIsRenaming(true);
+                  setRenameValue(account.name);
+                }}
                 className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
                 title="Rename account"
               >
@@ -619,20 +716,25 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
           <button
             onClick={handleToggleAutomation}
             disabled={automationBusy}
-            title={account.automation_enabled ? 'Stop automation' : 'Start automation'}
-            className={clsx(
-              'p-1.5 rounded-lg transition-colors',
+            title={
               account.automation_enabled
-                ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20'
-                : 'text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20'
+                ? "Stop automation"
+                : "Start automation"
+            }
+            className={clsx(
+              "p-1.5 rounded-lg transition-colors",
+              account.automation_enabled
+                ? "text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                : "text-green-500 hover:bg-green-50 dark:hover:bg-green-900/20",
             )}
           >
-            {automationBusy
-              ? <Loader2 size={16} className="animate-spin" />
-              : account.automation_enabled
-                ? <Square size={16} />
-                : <Play size={16} />
-            }
+            {automationBusy ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : account.automation_enabled ? (
+              <Square size={16} />
+            ) : (
+              <Play size={16} />
+            )}
           </button>
 
           <button
@@ -661,11 +763,14 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
             )}
 
             <button
-              onClick={() => { setShowCredentials((v) => !v); setShowSettings(false); }}
+              onClick={() => {
+                setShowCredentials((v) => !v);
+                setShowSettings(false);
+              }}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <Key size={13} />
-              {showCredentials ? 'Hide credentials' : 'Set credentials'}
+              {showCredentials ? "Hide credentials" : "Set credentials"}
             </button>
 
             {account.has_credentials && (
@@ -675,10 +780,11 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
                   disabled={testSession.isPending}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-600 text-xs text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                 >
-                  {testSession.isPending
-                    ? <Loader2 size={13} className="animate-spin" />
-                    : <CheckCircle size={13} />
-                  }
+                  {testSession.isPending ? (
+                    <Loader2 size={13} className="animate-spin" />
+                  ) : (
+                    <CheckCircle size={13} />
+                  )}
                   Test session
                 </button>
 
@@ -694,16 +800,19 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
             )}
 
             <button
-              onClick={() => { setShowSettings((v) => !v); setShowCredentials(false); }}
+              onClick={() => {
+                setShowSettings((v) => !v);
+                setShowCredentials(false);
+              }}
               className={clsx(
-                'flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors',
+                "flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-xs transition-colors",
                 showSettings
-                  ? 'border-primary-light dark:border-primary-dark text-primary-light dark:text-primary-dark bg-primary-light/5'
-                  : 'border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                  ? "border-primary-light dark:border-primary-dark text-primary-light dark:text-primary-dark bg-primary-light/5"
+                  : "border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700",
               )}
             >
               <Settings2 size={13} />
-              {showSettings ? 'Hide settings' : 'Settings'}
+              {showSettings ? "Hide settings" : "Settings"}
             </button>
 
             <button
@@ -711,30 +820,33 @@ function AccountRow({ account, defaultOpen = false }: { account: AccountListItem
               disabled={deleteAccount.isPending}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-red-200 dark:border-red-800 text-xs text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 ml-auto"
             >
-              {deleteAccount.isPending
-                ? <Loader2 size={13} className="animate-spin" />
-                : <Trash2 size={13} />
-              }
+              {deleteAccount.isPending ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Trash2 size={13} />
+              )}
               Delete
             </button>
           </div>
 
           {/* Test result */}
           {testSession.data && (
-            <div className={clsx(
-              'flex items-center gap-2 text-sm px-3 py-2 rounded-lg',
-              testSession.data.valid
-                ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
-                : 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-            )}>
+            <div
+              className={clsx(
+                "flex items-center gap-2 text-sm px-3 py-2 rounded-lg",
+                testSession.data.valid
+                  ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300"
+                  : "bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400",
+              )}
+            >
+              {testSession.data.valid ? (
+                <CheckCircle size={14} />
+              ) : (
+                <XCircle size={14} />
+              )}
               {testSession.data.valid
-                ? <CheckCircle size={14} />
-                : <XCircle size={14} />
-              }
-              {testSession.data.valid
-                ? `${testSession.data.username ?? 'unknown'} — ${testSession.data.points ?? '?'} points`
-                : testSession.data.error ?? 'Invalid session'
-              }
+                ? `${testSession.data.username ?? "unknown"} — ${testSession.data.points ?? "?"} points`
+                : (testSession.data.error ?? "Invalid session")}
             </div>
           )}
 
@@ -760,13 +872,15 @@ export function Accounts() {
   const { data: accounts = [], isLoading, error } = useAccounts();
   const [showCreate, setShowCreate] = useState(false);
   const [searchParams] = useSearchParams();
-  const setupMode = searchParams.get('setup') === 'true';
+  const setupMode = searchParams.get("setup") === "true";
 
   return (
     <div className="p-6 max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Accounts</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Accounts
+          </h1>
           <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
             Manage multiple SteamGifts accounts
           </p>
@@ -795,7 +909,8 @@ export function Accounts() {
 
       {error && (
         <div className="text-red-500 py-4 text-sm">
-          Failed to load accounts: {error instanceof Error ? error.message : 'Unknown error'}
+          Failed to load accounts:{" "}
+          {error instanceof Error ? error.message : "Unknown error"}
         </div>
       )}
 

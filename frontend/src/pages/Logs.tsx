@@ -1,9 +1,16 @@
-import { useState } from 'react';
-import { AlertCircle, Info, AlertTriangle, Download, Trash2, RefreshCw } from 'lucide-react';
-import { Card, Button, Badge, Input, CardSkeleton } from '@/components/common';
-import { useLogs, useClearLogs, useExportLogs, type LogFilters } from '@/hooks';
-import { showSuccess, showError } from '@/stores/uiStore';
-import type { ActivityLog } from '@/types';
+import { useState } from "react";
+import {
+  AlertCircle,
+  Info,
+  AlertTriangle,
+  Download,
+  Trash2,
+  RefreshCw,
+} from "lucide-react";
+import { Card, Button, Badge, Input, CardSkeleton } from "@/components/common";
+import { useLogs, useClearLogs, useExportLogs, type LogFilters } from "@/hooks";
+import { showSuccess, showError } from "@/stores/uiStore";
+import type { ActivityLog } from "@/types";
 
 /**
  * Logs page
@@ -11,12 +18,12 @@ import type { ActivityLog } from '@/types';
  */
 export function Logs() {
   const [filters, setFilters] = useState<LogFilters>({
-    level: 'all',
-    event_type: 'all',
+    level: "all",
+    event_type: "all",
     page: 1,
     limit: 50,
   });
-  const [searchInput, setSearchInput] = useState('');
+  const [searchInput, setSearchInput] = useState("");
 
   const { data, isLoading, error, refetch, isFetching } = useLogs(filters);
   const clearLogs = useClearLogs();
@@ -24,23 +31,31 @@ export function Logs() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    setFilters(prev => ({ ...prev, search: searchInput || undefined, page: 1 }));
+    setFilters((prev) => ({
+      ...prev,
+      search: searchInput || undefined,
+      page: 1,
+    }));
   };
 
-  const handleLevelFilter = (level: LogFilters['level']) => {
-    setFilters(prev => ({ ...prev, level, page: 1 }));
+  const handleLevelFilter = (level: LogFilters["level"]) => {
+    setFilters((prev) => ({ ...prev, level, page: 1 }));
   };
 
-  const handleEventTypeFilter = (event_type: LogFilters['event_type']) => {
-    setFilters(prev => ({ ...prev, event_type, page: 1 }));
+  const handleEventTypeFilter = (event_type: LogFilters["event_type"]) => {
+    setFilters((prev) => ({ ...prev, event_type, page: 1 }));
   };
 
   const handlePageChange = (page: number) => {
-    setFilters(prev => ({ ...prev, page }));
+    setFilters((prev) => ({ ...prev, page }));
   };
 
   const handleClearLogs = async () => {
-    if (!confirm('Are you sure you want to clear all logs? This action cannot be undone.')) {
+    if (
+      !confirm(
+        "Are you sure you want to clear all logs? This action cannot be undone.",
+      )
+    ) {
       return;
     }
 
@@ -48,23 +63,25 @@ export function Logs() {
       const result = await clearLogs.mutateAsync();
       showSuccess(`Cleared ${result?.deleted ?? 0} logs`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to clear logs');
+      showError(err instanceof Error ? err.message : "Failed to clear logs");
     }
   };
 
-  const handleExport = async (format: 'csv' | 'json') => {
+  const handleExport = async (format: "csv" | "json") => {
     try {
       await exportLogs.mutateAsync(format);
       showSuccess(`Logs exported as ${format.toUpperCase()}`);
     } catch (err) {
-      showError(err instanceof Error ? err.message : 'Failed to export logs');
+      showError(err instanceof Error ? err.message : "Failed to export logs");
     }
   };
 
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Activity Logs</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Activity Logs
+        </h1>
         <Card>
           <div className="flex items-center gap-3 text-red-500">
             <AlertCircle size={24} />
@@ -78,7 +95,9 @@ export function Logs() {
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Activity Logs</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Activity Logs
+        </h1>
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2">
@@ -95,7 +114,7 @@ export function Logs() {
             variant="secondary"
             size="sm"
             icon={Download}
-            onClick={() => handleExport('csv')}
+            onClick={() => handleExport("csv")}
             isLoading={exportLogs.isPending}
           >
             Export CSV
@@ -104,7 +123,7 @@ export function Logs() {
             variant="secondary"
             size="sm"
             icon={Download}
-            onClick={() => handleExport('json')}
+            onClick={() => handleExport("json")}
             isLoading={exportLogs.isPending}
           >
             Export JSON
@@ -132,7 +151,9 @@ export function Logs() {
               onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1"
             />
-            <Button type="submit" variant="secondary">Search</Button>
+            <Button type="submit" variant="secondary">
+              Search
+            </Button>
           </form>
 
           {/* Level Filter */}
@@ -142,26 +163,26 @@ export function Logs() {
             </label>
             <div className="flex flex-wrap gap-2">
               <FilterButton
-                active={filters.level === 'all'}
-                onClick={() => handleLevelFilter('all')}
+                active={filters.level === "all"}
+                onClick={() => handleLevelFilter("all")}
               >
                 All
               </FilterButton>
               <FilterButton
-                active={filters.level === 'info'}
-                onClick={() => handleLevelFilter('info')}
+                active={filters.level === "info"}
+                onClick={() => handleLevelFilter("info")}
               >
                 Info
               </FilterButton>
               <FilterButton
-                active={filters.level === 'warning'}
-                onClick={() => handleLevelFilter('warning')}
+                active={filters.level === "warning"}
+                onClick={() => handleLevelFilter("warning")}
               >
                 Warning
               </FilterButton>
               <FilterButton
-                active={filters.level === 'error'}
-                onClick={() => handleLevelFilter('error')}
+                active={filters.level === "error"}
+                onClick={() => handleLevelFilter("error")}
               >
                 Error
               </FilterButton>
@@ -175,38 +196,38 @@ export function Logs() {
             </label>
             <div className="flex flex-wrap gap-2">
               <FilterButton
-                active={filters.event_type === 'all'}
-                onClick={() => handleEventTypeFilter('all')}
+                active={filters.event_type === "all"}
+                onClick={() => handleEventTypeFilter("all")}
               >
                 All
               </FilterButton>
               <FilterButton
-                active={filters.event_type === 'scan'}
-                onClick={() => handleEventTypeFilter('scan')}
+                active={filters.event_type === "scan"}
+                onClick={() => handleEventTypeFilter("scan")}
               >
                 Scan
               </FilterButton>
               <FilterButton
-                active={filters.event_type === 'entry'}
-                onClick={() => handleEventTypeFilter('entry')}
+                active={filters.event_type === "entry"}
+                onClick={() => handleEventTypeFilter("entry")}
               >
                 Entry
               </FilterButton>
               <FilterButton
-                active={filters.event_type === 'scheduler'}
-                onClick={() => handleEventTypeFilter('scheduler')}
+                active={filters.event_type === "scheduler"}
+                onClick={() => handleEventTypeFilter("scheduler")}
               >
                 Scheduler
               </FilterButton>
               <FilterButton
-                active={filters.event_type === 'config'}
-                onClick={() => handleEventTypeFilter('config')}
+                active={filters.event_type === "config"}
+                onClick={() => handleEventTypeFilter("config")}
               >
                 Config
               </FilterButton>
               <FilterButton
-                active={filters.event_type === 'error'}
-                onClick={() => handleEventTypeFilter('error')}
+                active={filters.event_type === "error"}
+                onClick={() => handleEventTypeFilter("error")}
               >
                 Error
               </FilterButton>
@@ -281,8 +302,8 @@ function FilterButton({ active, onClick, children }: FilterButtonProps) {
       onClick={onClick}
       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
         active
-          ? 'bg-primary-light text-white'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+          ? "bg-primary-light text-white"
+          : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
       }`}
     >
       {children}
@@ -298,30 +319,30 @@ function LogEntry({ log }: LogEntryProps) {
   const levelConfig = {
     info: {
       icon: Info,
-      color: 'text-blue-500',
-      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-      badge: 'default' as const,
+      color: "text-blue-500",
+      bgColor: "bg-blue-50 dark:bg-blue-900/20",
+      badge: "default" as const,
     },
     warning: {
       icon: AlertTriangle,
-      color: 'text-yellow-500',
-      bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
-      badge: 'warning' as const,
+      color: "text-yellow-500",
+      bgColor: "bg-yellow-50 dark:bg-yellow-900/20",
+      badge: "warning" as const,
     },
     error: {
       icon: AlertCircle,
-      color: 'text-red-500',
-      bgColor: 'bg-red-50 dark:bg-red-900/20',
-      badge: 'error' as const,
+      color: "text-red-500",
+      bgColor: "bg-red-50 dark:bg-red-900/20",
+      badge: "error" as const,
     },
   };
 
   const eventTypeLabels = {
-    scan: 'Scan',
-    entry: 'Entry',
-    error: 'Error',
-    config: 'Config',
-    scheduler: 'Scheduler',
+    scan: "Scan",
+    entry: "Entry",
+    error: "Error",
+    config: "Config",
+    scheduler: "Scheduler",
   };
 
   const config = levelConfig[log.level];

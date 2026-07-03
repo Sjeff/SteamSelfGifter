@@ -6,11 +6,12 @@ This document tracks disabled warnings, skipped tests, and other technical debt 
 
 ### Frontend (`frontend/eslint.config.js`)
 
-| Rule | Reason | Files Affected |
-|------|--------|----------------|
+| Rule                              | Reason                                                                                           | Files Affected                  |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ | ------------------------------- |
 | `react-hooks/set-state-in-effect` | False positives for valid patterns (initializing form state from fetched data, countdown timers) | `Settings.tsx`, `Dashboard.tsx` |
 
 **Details:**
+
 - `Settings.tsx`: Initializes form state when settings data is fetched - standard pattern for forms with async data
 - `Dashboard.tsx`: Updates countdown timer state every second - valid use of setInterval in useEffect
 
@@ -18,13 +19,14 @@ This document tracks disabled warnings, skipped tests, and other technical debt 
 
 ### Backend
 
-| Test File | Tests Skipped | Reason |
-|-----------|---------------|--------|
-| `test_api_main.py` | 2 | Requires database setup - covered by e2e tests |
+| Test File               | Tests Skipped    | Reason                                                                        |
+| ----------------------- | ---------------- | ----------------------------------------------------------------------------- |
+| `test_api_main.py`      | 2                | Requires database setup - covered by e2e tests                                |
 | `test_scheduler_api.py` | 12 (entire file) | APScheduler causes event loop conflicts in test suite - covered by unit tests |
-| `integration/*` | All | Requires `--run-integration` flag and valid PHPSESSID |
+| `integration/*`         | All              | Requires `--run-integration` flag and valid PHPSESSID                         |
 
 **Test counts (as of last run):**
+
 - Backend: 718 passed, 31 skipped
 - Frontend: 170 passed, 0 skipped
 

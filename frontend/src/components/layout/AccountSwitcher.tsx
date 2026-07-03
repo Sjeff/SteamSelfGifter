@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
-import { ChevronDown, User, Check, Zap } from 'lucide-react';
-import { clsx } from 'clsx';
-import { useAccounts } from '@/hooks/useAccounts';
-import { useAccountStore } from '@/stores/accountStore';
+import { useEffect, useRef, useState } from "react";
+import { ChevronDown, User, Check, Zap } from "lucide-react";
+import { clsx } from "clsx";
+import { useAccounts } from "@/hooks/useAccounts";
+import { useAccountStore } from "@/stores/accountStore";
 
 /**
  * Account switcher dropdown shown at the top of the sidebar.
@@ -30,12 +30,12 @@ export function AccountSwitcher() {
         setOpen(false);
       }
     }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const selected = accounts.find((a) => a.id === selectedAccountId);
-  const displayName = selected?.name ?? (isLoading ? '...' : 'Select account');
+  const displayName = selected?.name ?? (isLoading ? "..." : "Select account");
 
   return (
     <div ref={ref} className="relative px-2 mb-4">
@@ -54,8 +54,8 @@ export function AccountSwitcher() {
         <ChevronDown
           size={14}
           className={clsx(
-            'shrink-0 text-gray-400 transition-transform',
-            open && 'rotate-180'
+            "shrink-0 text-gray-400 transition-transform",
+            open && "rotate-180",
           )}
         />
       </button>
@@ -70,29 +70,38 @@ export function AccountSwitcher() {
                   setOpen(false);
                 }}
                 className={clsx(
-                  'w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors',
+                  "w-full flex items-center gap-2 px-3 py-2 text-sm transition-colors",
                   account.id === selectedAccountId
-                    ? 'text-white bg-primary-light dark:bg-primary-dark'
-                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? "text-white bg-primary-light dark:bg-primary-dark"
+                    : "text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700",
                 )}
               >
-                <span className="flex-1 text-left truncate">{account.name}</span>
+                <span className="flex-1 text-left truncate">
+                  {account.name}
+                </span>
                 {account.automation_enabled && (
-                  <Zap size={12} className={clsx(
-                    account.id === selectedAccountId ? 'text-white' : 'text-green-500'
-                  )} />
+                  <Zap
+                    size={12}
+                    className={clsx(
+                      account.id === selectedAccountId
+                        ? "text-white"
+                        : "text-green-500",
+                    )}
+                  />
                 )}
                 {!account.has_credentials && (
-                  <span className={clsx(
-                    'text-xs',
-                    account.id === selectedAccountId ? 'text-white/70' : 'text-gray-400'
-                  )}>
+                  <span
+                    className={clsx(
+                      "text-xs",
+                      account.id === selectedAccountId
+                        ? "text-white/70"
+                        : "text-gray-400",
+                    )}
+                  >
                     no creds
                   </span>
                 )}
-                {account.id === selectedAccountId && (
-                  <Check size={14} />
-                )}
+                {account.id === selectedAccountId && <Check size={14} />}
               </button>
             </li>
           ))}

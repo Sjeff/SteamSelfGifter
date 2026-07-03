@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { create } from "zustand";
+import { persist } from "zustand/middleware";
 
 interface AccountState {
   selectedAccountId: number | null;
@@ -18,6 +18,6 @@ export const useAccountStore = create<AccountState>()(
       selectedAccountId: null,
       setSelectedAccountId: (id) => set({ selectedAccountId: id }),
     }),
-    { name: 'account-store' }
-  )
+    { name: "account-store" },
+  ),
 );

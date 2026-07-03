@@ -111,7 +111,7 @@ Settings are configured **per account** via the Accounts page:
 > Each account after the first receives a **5-minute scan start offset** to prevent simultaneous requests from the same IP. With a default scan interval of 30 minutes this works fine for up to 6 accounts. For more accounts, or if you use a shorter scan interval, you must increase the **Scan Interval** setting accordingly:
 >
 > | Accounts | Required scan interval |
-> |----------|------------------------|
+> | -------- | ---------------------- |
 > | 1        | any                    |
 > | 2        | > 5 min                |
 > | 3        | > 10 min               |
@@ -160,10 +160,12 @@ SteamSelfGifter/
 ## API Documentation
 
 Once the backend is running, visit:
+
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
 When running via Docker, the API is available at:
+
 - http://localhost:8080/api/v1/
 
 ## Development

@@ -4,11 +4,16 @@
  * Provides easy access to real-time events in React components.
  */
 
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { websocketService } from '@/services/websocket';
-import { showSuccess, showError, showWarning, showInfo } from '@/stores/uiStore';
-import type { WebSocketEvent } from '@/types';
+import { useEffect, useState, useCallback, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { websocketService } from "@/services/websocket";
+import {
+  showSuccess,
+  showError,
+  showWarning,
+  showInfo,
+} from "@/stores/uiStore";
+import type { WebSocketEvent } from "@/types";
 
 /**
  * Hook to manage WebSocket connection lifecycle
@@ -55,7 +60,7 @@ export function useWebSocketConnection() {
  */
 export function useWebSocketEvent<T = unknown>(
   eventType: string,
-  handler: (data: T, event: WebSocketEvent<T>) => void
+  handler: (data: T, event: WebSocketEvent<T>) => void,
 ) {
   const handlerRef = useRef(handler);
 
@@ -97,7 +102,7 @@ export function useWebSocketAnyEvent(handler: (event: WebSocketEvent) => void) {
  * Notification data from WebSocket
  */
 interface NotificationData {
-  level: 'info' | 'warning' | 'error' | 'success';
+  level: "info" | "warning" | "error" | "success";
   message: string;
   details?: Record<string, unknown>;
 }
@@ -108,18 +113,18 @@ interface NotificationData {
  * Displays toast notifications for incoming WebSocket notification events.
  */
 export function useWebSocketNotifications() {
-  useWebSocketEvent<NotificationData>('notification', (data) => {
+  useWebSocketEvent<NotificationData>("notification", (data) => {
     switch (data.level) {
-      case 'success':
+      case "success":
         showSuccess(data.message);
         break;
-      case 'error':
+      case "error":
         showError(data.message);
         break;
-      case 'warning':
+      case "warning":
         showWarning(data.message);
         break;
-      case 'info':
+      case "info":
       default:
         showInfo(data.message);
         break;
@@ -153,57 +158,60 @@ export function useWebSocketQueryInvalidation() {
   const queryClient = useQueryClient();
 
   // Invalidate dashboard on stats update
-  useWebSocketEvent<StatsUpdateData>('stats_update', () => {
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  useWebSocketEvent<StatsUpdateData>("stats_update", () => {
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   });
 
   // Invalidate scheduler status on scheduler events
-  useWebSocketEvent('scheduler_started', () => {
-    queryClient.invalidateQueries({ queryKey: ['scheduler'] });
+  useWebSocketEvent("scheduler_started", () => {
+    queryClient.invalidateQueries({ queryKey: ["scheduler"] });
   });
 
-  useWebSocketEvent('scheduler_stopped', () => {
-    queryClient.invalidateQueries({ queryKey: ['scheduler'] });
+  useWebSocketEvent("scheduler_stopped", () => {
+    queryClient.invalidateQueries({ queryKey: ["scheduler"] });
   });
 
-  useWebSocketEvent('scheduler_paused', () => {
-    queryClient.invalidateQueries({ queryKey: ['scheduler'] });
+  useWebSocketEvent("scheduler_paused", () => {
+    queryClient.invalidateQueries({ queryKey: ["scheduler"] });
   });
 
-  useWebSocketEvent('scheduler_resumed', () => {
-    queryClient.invalidateQueries({ queryKey: ['scheduler'] });
+  useWebSocketEvent("scheduler_resumed", () => {
+    queryClient.invalidateQueries({ queryKey: ["scheduler"] });
   });
 
   // Invalidate giveaways on scan complete
-  useWebSocketEvent('scan_complete', () => {
-    queryClient.invalidateQueries({ queryKey: ['giveaways'] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
+  useWebSocketEvent("scan_complete", () => {
+    queryClient.invalidateQueries({ queryKey: ["giveaways"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
   });
 
   // Invalidate entries on entry events
-  useWebSocketEvent('entry_success', () => {
-    queryClient.invalidateQueries({ queryKey: ['entries'] });
-    queryClient.invalidateQueries({ queryKey: ['giveaways'] });
-    queryClient.invalidateQueries({ queryKey: ['dashboard'] });
-    queryClient.invalidateQueries({ queryKey: ['analytics'] });
+  useWebSocketEvent("entry_success", () => {
+    queryClient.invalidateQueries({ queryKey: ["entries"] });
+    queryClient.invalidateQueries({ queryKey: ["giveaways"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    queryClient.invalidateQueries({ queryKey: ["analytics"] });
   });
 
-  useWebSocketEvent('entry_failure', () => {
-    queryClient.invalidateQueries({ queryKey: ['entries'] });
-    queryClient.invalidateQueries({ queryKey: ['analytics'] });
+  useWebSocketEvent("entry_failure", () => {
+    queryClient.invalidateQueries({ queryKey: ["entries"] });
+    queryClient.invalidateQueries({ queryKey: ["analytics"] });
   });
 
   // Invalidate logs on new log entry
-  useWebSocketEvent('log_entry', () => {
-    queryClient.invalidateQueries({ queryKey: ['logs'] });
+  useWebSocketEvent("log_entry", () => {
+    queryClient.invalidateQueries({ queryKey: ["logs"] });
   });
 
   // Handle session invalid event
-  useWebSocketEvent<SessionInvalidData>('session_invalid', (data) => {
+  useWebSocketEvent<SessionInvalidData>("session_invalid", (data) => {
     // Invalidate dashboard to update session status banner
-    queryClient.invalidateQueries({ queryKey: ['analytics', 'dashboard'] });
+    queryClient.invalidateQueries({ queryKey: ["analytics", "dashboard"] });
     // Show warning notification
-    showWarning(data.reason || 'Your SteamGifts session has expired. Please update your PHPSESSID in Settings.');
+    showWarning(
+      data.reason ||
+        "Your SteamGifts session has expired. Please update your PHPSESSID in Settings.",
+    );
   });
 }
 
@@ -225,17 +233,17 @@ export function useScanProgress() {
   const [progress, setProgress] = useState<ScanProgressData | null>(null);
   const [isScanning, setIsScanning] = useState(false);
 
-  useWebSocketEvent<ScanProgressData>('scan_progress', (data) => {
+  useWebSocketEvent<ScanProgressData>("scan_progress", (data) => {
     setProgress(data);
     setIsScanning(true);
   });
 
-  useWebSocketEvent('scan_complete', () => {
+  useWebSocketEvent("scan_complete", () => {
     setProgress(null);
     setIsScanning(false);
   });
 
-  useWebSocketEvent('scan_error', () => {
+  useWebSocketEvent("scan_error", () => {
     setProgress(null);
     setIsScanning(false);
   });

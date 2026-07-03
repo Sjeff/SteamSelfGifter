@@ -5,7 +5,7 @@
  * event handling for real-time updates.
  */
 
-import type { WebSocketEvent } from '@/types';
+import type { WebSocketEvent } from "@/types";
 
 type EventHandler = (event: WebSocketEvent) => void;
 type ConnectionHandler = () => void;
@@ -34,8 +34,9 @@ class WebSocketService {
 
   constructor(options: WebSocketServiceOptions = {}) {
     // Default to relative WebSocket URL for same-origin connection
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    this.url = options.url || `${wsProtocol}//${window.location.host}/ws/events`;
+    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+    this.url =
+      options.url || `${wsProtocol}//${window.location.host}/ws/events`;
     this.reconnectInterval = options.reconnectInterval || 3000;
     this.maxReconnectAttempts = options.maxReconnectAttempts || 10;
     this.keepaliveInterval = options.keepaliveInterval || 30000;
@@ -55,10 +56,10 @@ class WebSocketService {
       this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
-        console.log('[WebSocket] Connected to', this.url);
+        console.log("[WebSocket] Connected to", this.url);
         this.reconnectAttempts = 0;
         this.startKeepalive();
-        this.onConnectHandlers.forEach(handler => handler());
+        this.onConnectHandlers.forEach((handler) => handler());
       };
 
       this.ws.onmessage = (event) => {
@@ -66,14 +67,14 @@ class WebSocketService {
           const data = JSON.parse(event.data) as WebSocketEvent;
           this.handleEvent(data);
         } catch (err) {
-          console.error('[WebSocket] Failed to parse message:', err);
+          console.error("[WebSocket] Failed to parse message:", err);
         }
       };
 
       this.ws.onclose = (event) => {
-        console.log('[WebSocket] Disconnected:', event.code, event.reason);
+        console.log("[WebSocket] Disconnected:", event.code, event.reason);
         this.stopKeepalive();
-        this.onDisconnectHandlers.forEach(handler => handler());
+        this.onDisconnectHandlers.forEach((handler) => handler());
 
         if (!this.isIntentionallyClosed) {
           this.scheduleReconnect();
@@ -81,10 +82,10 @@ class WebSocketService {
       };
 
       this.ws.onerror = (error) => {
-        console.error('[WebSocket] Error:', error);
+        console.error("[WebSocket] Error:", error);
       };
     } catch (err) {
-      console.error('[WebSocket] Failed to connect:', err);
+      console.error("[WebSocket] Failed to connect:", err);
       this.scheduleReconnect();
     }
   }
@@ -98,7 +99,7 @@ class WebSocketService {
     this.clearReconnectTimer();
 
     if (this.ws) {
-      this.ws.close(1000, 'Client disconnecting');
+      this.ws.close(1000, "Client disconnecting");
       this.ws = null;
     }
   }
@@ -166,22 +167,22 @@ class WebSocketService {
 
   private handleEvent(event: WebSocketEvent): void {
     // Call global handlers
-    this.globalHandlers.forEach(handler => {
+    this.globalHandlers.forEach((handler) => {
       try {
         handler(event);
       } catch (err) {
-        console.error('[WebSocket] Handler error:', err);
+        console.error("[WebSocket] Handler error:", err);
       }
     });
 
     // Call type-specific handlers
     const handlers = this.eventHandlers.get(event.type);
     if (handlers) {
-      handlers.forEach(handler => {
+      handlers.forEach((handler) => {
         try {
           handler(event);
         } catch (err) {
-          console.error('[WebSocket] Handler error:', err);
+          console.error("[WebSocket] Handler error:", err);
         }
       });
     }
@@ -190,7 +191,7 @@ class WebSocketService {
   private startKeepalive(): void {
     this.stopKeepalive();
     this.keepaliveTimer = setInterval(() => {
-      this.send({ type: 'ping' });
+      this.send({ type: "ping" });
     }, this.keepaliveInterval);
   }
 
@@ -203,7 +204,7 @@ class WebSocketService {
 
   private scheduleReconnect(): void {
     if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-      console.log('[WebSocket] Max reconnect attempts reached');
+      console.log("[WebSocket] Max reconnect attempts reached");
       return;
     }
 
@@ -211,7 +212,9 @@ class WebSocketService {
     this.reconnectAttempts++;
 
     const delay = this.reconnectInterval * Math.min(this.reconnectAttempts, 5);
-    console.log(`[WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
+    console.log(
+      `[WebSocket] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`,
+    );
 
     this.reconnectTimer = setTimeout(() => {
       this.connect();
