@@ -36,7 +36,27 @@ class ApiClient {
       // Parse JSON response
       const data = await response.json();
 
-      // Our API always returns { success, data, error? }
+      // Successful responses are { success, data, meta }. But responses
+      // produced by the backend's global exception handlers
+      // (api/middleware.py) are shaped { error: { message, code, details } }
+      // with no success/data keys at all. Normalize both into the same
+      // { success, data, error } shape so callers can always rely on
+      // `error` being a string, not an object (passing an object into
+      // `new Error(...)` stringifies it to "[object Object]").
+      if (
+        data &&
+        typeof data === "object" &&
+        !("success" in data) &&
+        "error" in data
+      ) {
+        const backendError = (data as { error?: { message?: string } }).error;
+        return {
+          success: false,
+          data: null as T,
+          error: backendError?.message || "An unexpected error occurred",
+        };
+      }
+
       return data as ApiResponse<T>;
     } catch (error) {
       // Network error or invalid JSON

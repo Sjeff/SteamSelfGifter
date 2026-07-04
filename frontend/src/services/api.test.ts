@@ -132,5 +132,29 @@ describe("ApiClient", () => {
       expect(result.success).toBe(false);
       expect(result.error).toBe("Unknown error");
     });
+
+    it("should normalize the backend's exception-handler error shape into a string", async () => {
+      // api/middleware.py's exception handlers respond with
+      // { error: { message, code, details } } and no success/data keys,
+      // unlike the { success, data, meta } shape normal responses use.
+      vi.mocked(fetch).mockResolvedValueOnce({
+        json: () =>
+          Promise.resolve({
+            error: {
+              message:
+                "Could not extract XSRF token - session expired or invalid",
+              code: "SG_004",
+              details: { reason: "xsrf_token_not_found" },
+            },
+          }),
+      } as Response);
+
+      const result = await api.post("/api/v1/scheduler/sync-wins");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe(
+        "Could not extract XSRF token - session expired or invalid",
+      );
+    });
   });
 });
