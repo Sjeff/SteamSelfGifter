@@ -40,12 +40,10 @@ export {
 export {
   useGiveaways,
   useInfiniteGiveaways,
-  useGiveaway,
   useEnterGiveaway,
   useHideGiveaway,
   useUnhideGiveaway,
   useRemoveEntry,
-  useRefreshGiveawayGame,
   useCheckGiveawaySafety,
   useHideOnSteamGifts,
   usePostComment,
@@ -54,13 +52,7 @@ export {
 } from "./useGiveaways";
 
 // Entry hooks
-export {
-  useEntries,
-  useEntry,
-  useHistory,
-  entryKeys,
-  type EntryFilters,
-} from "./useEntries";
+export { useEntries, entryKeys, type EntryFilters } from "./useEntries";
 
 // Analytics hooks
 export {
@@ -68,10 +60,8 @@ export {
   useEntryStats,
   useGiveawayStats,
   useGameStats,
-  useEntryTrends,
   analyticsKeys,
   type TimeRangeFilter,
-  type TrendDataPoint,
 } from "./useAnalytics";
 
 // Log hooks
@@ -83,25 +73,11 @@ export {
   type LogFilters,
 } from "./useLogs";
 
-// Game hooks
-export {
-  useGames,
-  useGame,
-  useRefreshGame,
-  useRefreshStaleGames,
-  gameKeys,
-  type GameFilters,
-} from "./useGames";
-
-// System hooks
-export { useHealthCheck, useSystemInfo, systemKeys } from "./useSystem";
-
 // WebSocket hooks
 export {
   useWebSocket,
   useWebSocketConnection,
   useWebSocketEvent,
-  useWebSocketAnyEvent,
   useWebSocketNotifications,
   useWebSocketQueryInvalidation,
   useScanProgress,

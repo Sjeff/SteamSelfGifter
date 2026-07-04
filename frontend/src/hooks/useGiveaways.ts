@@ -225,23 +225,6 @@ export function useInfiniteGiveaways(
 }
 
 /**
- * Fetch a single giveaway by ID
- */
-export function useGiveaway(id: number) {
-  return useQuery({
-    queryKey: giveawayKeys.detail(id),
-    queryFn: async () => {
-      const response = await api.get<Giveaway>(`/api/v1/giveaways/${id}`);
-      if (!response.success) {
-        throw new Error(response.error || "Failed to fetch giveaway");
-      }
-      return response.data;
-    },
-    enabled: id > 0,
-  });
-}
-
-/**
  * Enter a giveaway manually
  */
 export function useEnterGiveaway() {
@@ -329,31 +312,6 @@ export function useRemoveEntry() {
       // Refresh giveaways list and entries
       queryClient.invalidateQueries({ queryKey: giveawayKeys.all });
       queryClient.invalidateQueries({ queryKey: ["entries"] });
-    },
-  });
-}
-
-/**
- * Refresh giveaway game data from Steam
- */
-export function useRefreshGiveawayGame() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (giveawayId: number) => {
-      const response = await api.post<Giveaway>(
-        `/api/v1/giveaways/${giveawayId}/refresh`,
-      );
-      if (!response.success) {
-        throw new Error(response.error || "Failed to refresh game data");
-      }
-      return response.data;
-    },
-    onSuccess: (_, giveawayId) => {
-      queryClient.invalidateQueries({
-        queryKey: giveawayKeys.detail(giveawayId),
-      });
-      queryClient.invalidateQueries({ queryKey: giveawayKeys.lists() });
     },
   });
 }

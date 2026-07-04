@@ -202,20 +202,6 @@ export interface ActivityLog {
   created_at: string;
 }
 
-// System info
-export interface SystemInfo {
-  app_name: string;
-  version: string;
-  debug: boolean;
-  database: string;
-}
-
-export interface HealthCheck {
-  status: string;
-  timestamp: string;
-  version: string;
-}
-
 // Scan result
 export interface ScanResult {
   new: number;

@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactNode } from "react";
 import {
   useGiveaways,
-  useGiveaway,
   useEnterGiveaway,
   useHideGiveaway,
   useUnhideGiveaway,
@@ -148,35 +147,6 @@ describe("useGiveaways", () => {
       });
 
       expect(result.current.error?.message).toBe("Failed to fetch giveaways");
-    });
-  });
-
-  describe("useGiveaway hook", () => {
-    it("should fetch single giveaway successfully", async () => {
-      mockApi.get.mockResolvedValueOnce({
-        success: true,
-        data: mockGiveaway,
-      });
-
-      const { result } = renderHook(() => useGiveaway(1), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(result.current.data).toEqual(mockGiveaway);
-      expect(mockApi.get).toHaveBeenCalledWith("/api/v1/giveaways/1");
-    });
-
-    it("should not fetch if id is 0", () => {
-      const { result } = renderHook(() => useGiveaway(0), {
-        wrapper: createWrapper(),
-      });
-
-      expect(result.current.isFetching).toBe(false);
-      expect(mockApi.get).not.toHaveBeenCalled();
     });
   });
 

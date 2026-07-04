@@ -78,27 +78,6 @@ export function useWebSocketEvent<T = unknown>(
 }
 
 /**
- * Hook to subscribe to all WebSocket events
- *
- * @param handler - Callback function when any event is received
- */
-export function useWebSocketAnyEvent(handler: (event: WebSocketEvent) => void) {
-  const handlerRef = useRef(handler);
-
-  useEffect(() => {
-    handlerRef.current = handler;
-  });
-
-  useEffect(() => {
-    const unsubscribe = websocketService.onAny((event) => {
-      handlerRef.current(event);
-    });
-
-    return unsubscribe;
-  }, []);
-}
-
-/**
  * Notification data from WebSocket
  */
 interface NotificationData {

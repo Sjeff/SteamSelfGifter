@@ -182,35 +182,3 @@ export function useGameStats() {
     },
   });
 }
-
-/**
- * Entry trend data point
- */
-export interface TrendDataPoint {
-  date: string;
-  entries: number;
-  points_spent: number;
-}
-
-/**
- * Fetch entry trends over time
- */
-export function useEntryTrends(period: "week" | "month" | "year" = "month") {
-  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
-
-  return useQuery({
-    queryKey: [...analyticsKeys.entries, "trends", period, selectedAccountId],
-    queryFn: async () => {
-      const params = new URLSearchParams({ period });
-      if (selectedAccountId)
-        params.set("account_id", String(selectedAccountId));
-      const response = await api.get<TrendDataPoint[]>(
-        `/api/v1/analytics/entries/trends?${params.toString()}`,
-      );
-      if (!response.success) {
-        throw new Error(response.error || "Failed to fetch entry trends");
-      }
-      return response.data;
-    },
-  });
-}

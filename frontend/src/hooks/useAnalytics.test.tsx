@@ -7,7 +7,6 @@ import {
   useEntryStats,
   useGiveawayStats,
   useGameStats,
-  useEntryTrends,
 } from "./useAnalytics";
 import { api } from "@/services/api";
 import type {
@@ -262,33 +261,6 @@ describe("useAnalytics", () => {
       expect(result.current.data).toEqual(mockGameStats);
       expect(mockApi.get).toHaveBeenCalledWith(
         "/api/v1/analytics/games/summary",
-      );
-    });
-  });
-
-  describe("useEntryTrends hook", () => {
-    it("should fetch entry trends successfully", async () => {
-      const mockTrends = [
-        { date: "2024-01-01", entries: 10, points_spent: 50 },
-        { date: "2024-01-02", entries: 15, points_spent: 75 },
-      ];
-
-      mockApi.get.mockResolvedValueOnce({
-        success: true,
-        data: mockTrends,
-      });
-
-      const { result } = renderHook(() => useEntryTrends("month"), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(result.current.data).toEqual(mockTrends);
-      expect(mockApi.get).toHaveBeenCalledWith(
-        "/api/v1/analytics/entries/trends?period=month",
       );
     });
   });

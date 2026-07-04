@@ -103,27 +103,3 @@ export function useEntries(filters: EntryFilters = {}) {
     },
   });
 }
-
-/**
- * Fetch a single entry by ID
- */
-export function useEntry(id: number) {
-  return useQuery({
-    queryKey: entryKeys.detail(id),
-    queryFn: async () => {
-      const response = await api.get<EntryWithGiveaway>(
-        `/api/v1/entries/${id}`,
-      );
-      if (!response.success) {
-        throw new Error(response.error || "Failed to fetch entry");
-      }
-      return response.data;
-    },
-    enabled: id > 0,
-  });
-}
-
-/**
- * Alias for useEntries - for semantic clarity when used in History page
- */
-export const useHistory = useEntries;
