@@ -5,6 +5,7 @@ from httpx import AsyncClient
 
 from api.dependencies import get_current_user
 from api.main import app
+from core.config import settings
 
 
 @pytest.fixture(autouse=True)
@@ -133,3 +134,44 @@ async def test_change_password_flow(test_client: AsyncClient):
         "/api/v1/auth/login", json={"username": "admin", "password": "new password 123"}
     )
     assert new_password_login.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_setup_warns_when_secure_cookie_requested_over_http(
+    test_client: AsyncClient, mocker
+):
+    """A Secure cookie over plain HTTP is silently dropped by the browser.
+
+    Regression test: this exact misconfiguration (SESSION_COOKIE_SECURE=true
+    with no TLS in front) looked like a successful login followed by every
+    subsequent request being unauthenticated - it should be logged loudly
+    instead of failing silently.
+    """
+    settings.session_cookie_secure = True
+    warn = mocker.patch("api.routers.auth.logger.warning")
+    try:
+        response = await test_client.post(
+            "/api/v1/auth/setup",
+            json={"username": "admin", "password": "correct horse battery"},
+        )
+        assert response.status_code == 200
+        assert warn.call_args[0][0] == "insecure_session_cookie_over_http"
+    finally:
+        settings.session_cookie_secure = False
+
+
+@pytest.mark.asyncio
+async def test_login_does_not_warn_when_secure_cookie_not_required(
+    test_client: AsyncClient, mocker
+):
+    await test_client.post(
+        "/api/v1/auth/setup", json={"username": "admin", "password": "correct horse battery"}
+    )
+
+    warn = mocker.patch("api.routers.auth.logger.warning")
+    response = await test_client.post(
+        "/api/v1/auth/login", json={"username": "admin", "password": "correct horse battery"}
+    )
+
+    assert response.status_code == 200
+    warn.assert_not_called()

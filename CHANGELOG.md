@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 All changes were made in collaboration with [Claude](https://claude.ai) (Anthropic).
 
+## [3.1.1]
+
+### ⚠ Action Required
+
+- If your deployment has a custom Docker healthcheck override for health-aware routing (e.g. Traefik, Docker Swarm, Kubernetes) — remove it. The image already ships a correct built-in healthcheck; an old override referencing `curl` (no longer in the image) or `/api/v1/system/health` (now behind login) will leave the container permanently "unhealthy" with no error in the logs, and a health-aware reverse proxy will silently stop routing to it.
+
+### Fixed
+
+- The shipped `docker-compose.yml`/`docker-compose.dev.yml` never set `SESSION_COOKIE_SECURE`, so it defaulted to `true`. Over the plain HTTP these compose files serve by default, the browser silently discarded the `Secure`-flagged login cookie — login/setup looked successful, but every following request was unauthenticated and refreshing the page always dropped back to the login screen. Both compose files now default to `SESSION_COOKIE_SECURE=false`.
+- Added a warning log when a `Secure` session cookie is issued over a plain-HTTP request, so this misconfiguration is visible in the container logs instead of failing silently.
+
 ## [3.1.0]
 
 ### ⚠ Action Required
