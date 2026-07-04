@@ -111,6 +111,7 @@ class SetupAlreadyCompleteError(AppException):
 
 # Error code constants
 ERROR_CODES = {
+    "ACCT_001": "Account not found",
     "CONFIG_001": "SteamGifts credentials not configured",
     "CONFIG_002": "Invalid configuration",
     "CONFIG_003": "Invalid PHPSESSID",
