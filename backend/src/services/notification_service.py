@@ -385,15 +385,3 @@ class NotificationService:
             >>> all_logs = await service.get_all_logs()
         """
         return await self.repo.get_all()
-
-    async def get_logs_count(self) -> int:
-        """
-        Get total count of logs.
-
-        Returns:
-            Total count of logs
-
-        Example:
-            >>> count = await service.get_logs_count()
-        """
-        return await self.repo.count()

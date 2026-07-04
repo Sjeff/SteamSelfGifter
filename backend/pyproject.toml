@@ -9,7 +9,6 @@ packages = [
     "api.schemas",
     "core",
     "db",
-    "db.seeds",
     "models",
     "repositories",
     "services",
