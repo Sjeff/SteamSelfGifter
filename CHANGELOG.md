@@ -23,6 +23,10 @@ All changes were made in collaboration with [Claude](https://claude.ai) (Anthrop
 
 - Setup wizard and login page; "Change password" and "Log out" controls on the Settings page
 
+### Performance
+
+- Docker image shrunk from 419MB to 371MB: added a missing `.dockerignore` (was letting the build accidentally copy `frontend/node_modules` from the host into the image), dropped `curl` in favor of a Python-based healthcheck, and dropped uvicorn's unused `[standard]` extra (uvloop/httptools/watchfiles aren't needed since the container never runs with `--reload`)
+
 ### Removed
 
 - Deleted `backend/src/db/migrations/`, an orphaned duplicate of `backend/src/alembic/` left over from before the project moved its migrations there — nothing imported it, and its revision history had already diverged from the real one
