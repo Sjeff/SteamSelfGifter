@@ -10,6 +10,7 @@ SteamSelfGifter is an automated bot for entering Steam game giveaways on SteamGi
 
 ## Features
 
+- **Login Protection**: A one-time setup wizard creates an admin account; the dashboard and its API require logging in
 - **Multi-Account Support**: Manage multiple SteamGifts accounts from a single dashboard, with an account switcher in the sidebar
 - **Per-Account Settings**: Every setting (DLC, Safety, Auto-Join Rules, Scheduler, Rate Limiting) is configurable independently per account
 - **Web Dashboard**: Modern React-based UI for monitoring and control
@@ -91,6 +92,12 @@ npm run dev  # Development server at http://localhost:5173
 ```
 
 ## Configuration
+
+### First run: account setup
+
+The first time you open the web interface, you'll be asked to create an admin username and password — this is a one-time setup, after which every visit requires logging in. Sessions last up to 24 hours or until you log out.
+
+If you run SteamSelfGifter over plain HTTP without a TLS reverse proxy in front of it (e.g. LAN-only access), set the `SESSION_COOKIE_SECURE=false` environment variable, otherwise the browser will refuse the login cookie and you won't be able to log in.
 
 Settings are configured **per account** via the Accounts page:
 

@@ -23,6 +23,13 @@ All changes were made in collaboration with [Claude](https://claude.ai) (Anthrop
 
 - Setup wizard and login page; "Change password" and "Log out" controls on the Settings page
 
+### Removed
+
+- Deleted `backend/src/db/migrations/`, an orphaned duplicate of `backend/src/alembic/` left over from before the project moved its migrations there — nothing imported it, and its revision history had already diverged from the real one
+- Deleted `backend/src/db/seeds/` (an empty, unreferenced package) and `NotificationService.get_logs_count()` (unused method)
+- Deleted unused frontend hooks (`useGames`, `useSystem`, `useEntry`, `useHistory`, `useGiveaway`, `useRefreshGiveawayGame`, `useEntryTrends`, `useWebSocketAnyEvent`) and their now-unused types (`SystemInfo`, `HealthCheck`, `TrendDataPoint`, `GameFilters`) — none were wired into any page
+- Removed the unused `date-fns` dependency from `frontend/package.json`
+
 ### Fixed
 
 - The Docker healthcheck and container `HEALTHCHECK` pinged `/api/v1/system/health`, which is now behind login — added an unauthenticated `/health` route so the container correctly reports "healthy" again
