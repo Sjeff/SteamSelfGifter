@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router';
+import { NavLink } from "react-router";
 declare const __APP_VERSION__: string;
 import {
   LayoutDashboard,
@@ -8,10 +8,11 @@ import {
   BarChart3,
   FileText,
   Users,
+  Settings as SettingsIcon,
   LucideIcon,
-} from 'lucide-react';
-import { clsx } from 'clsx';
-import { AccountSwitcher } from './AccountSwitcher';
+} from "lucide-react";
+import { clsx } from "clsx";
+import { AccountSwitcher } from "./AccountSwitcher";
 
 interface NavItem {
   path: string;
@@ -21,13 +22,14 @@ interface NavItem {
 
 // Navigation items configuration
 const navItems: NavItem[] = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/giveaways', label: 'Giveaways', icon: Gift },
-  { path: '/wins', label: 'Wins', icon: Trophy },
-  { path: '/history', label: 'History', icon: History },
-  { path: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { path: '/accounts', label: 'Accounts', icon: Users },
-  { path: '/logs', label: 'Logs', icon: FileText },
+  { path: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { path: "/giveaways", label: "Giveaways", icon: Gift },
+  { path: "/wins", label: "Wins", icon: Trophy },
+  { path: "/history", label: "History", icon: History },
+  { path: "/analytics", label: "Analytics", icon: BarChart3 },
+  { path: "/accounts", label: "Accounts", icon: Users },
+  { path: "/logs", label: "Logs", icon: FileText },
+  { path: "/settings", label: "Settings", icon: SettingsIcon },
 ];
 
 /**
@@ -45,10 +47,10 @@ export function Sidebar() {
                 to={path}
                 className={({ isActive }) =>
                   clsx(
-                    'flex items-center gap-3 px-4 py-2 rounded-lg transition-colors',
+                    "flex items-center gap-3 px-4 py-2 rounded-lg transition-colors",
                     isActive
-                      ? 'bg-primary-light dark:bg-primary-dark text-white'
-                      : 'text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700'
+                      ? "bg-primary-light dark:bg-primary-dark text-white"
+                      : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700",
                   )
                 }
               >
@@ -58,7 +60,9 @@ export function Sidebar() {
             </li>
           ))}
         </ul>
-        <p className="mt-4 px-4 text-xs text-gray-400 dark:text-gray-500">v{__APP_VERSION__}</p>
+        <p className="mt-4 px-4 text-xs text-gray-400 dark:text-gray-500">
+          v{__APP_VERSION__}
+        </p>
       </nav>
     </aside>
   );

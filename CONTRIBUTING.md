@@ -14,6 +14,7 @@ Thank you for considering contributing to SteamSelfGifter!
 ## Development Setup
 
 ### Backend
+
 ```bash
 cd backend
 python -m venv .venv
@@ -23,6 +24,7 @@ pytest  # Verify setup
 ```
 
 ### Frontend
+
 ```bash
 cd frontend
 npm install
@@ -46,6 +48,7 @@ npm test  # Verify setup
 ### Commit Messages
 
 Use clear, descriptive commit messages:
+
 ```
 Add safety check toggle to settings page
 Fix timezone handling in giveaway end times
@@ -55,6 +58,7 @@ Update API documentation for new endpoints
 ## Testing
 
 ### Backend
+
 ```bash
 cd backend
 pytest                # All tests
@@ -62,6 +66,7 @@ pytest --cov=src      # With coverage
 ```
 
 ### Frontend
+
 ```bash
 cd frontend
 npm test              # All tests

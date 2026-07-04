@@ -1,24 +1,29 @@
-import { useQuery } from '@tanstack/react-query';
-import { api } from '@/services/api';
-import type { DashboardData, EntryStats, GiveawayStats, GameStats } from '@/types';
-import { useAccountStore } from '@/stores/accountStore';
+import { useQuery } from "@tanstack/react-query";
+import { api } from "@/services/api";
+import type {
+  DashboardData,
+  EntryStats,
+  GiveawayStats,
+  GameStats,
+} from "@/types";
+import { useAccountStore } from "@/stores/accountStore";
 
 /**
  * Query keys for analytics
  */
 export const analyticsKeys = {
-  all: ['analytics'] as const,
-  dashboard: ['analytics', 'dashboard'] as const,
-  entries: ['analytics', 'entries'] as const,
-  giveaways: ['analytics', 'giveaways'] as const,
-  games: ['analytics', 'games'] as const,
+  all: ["analytics"] as const,
+  dashboard: ["analytics", "dashboard"] as const,
+  entries: ["analytics", "entries"] as const,
+  giveaways: ["analytics", "giveaways"] as const,
+  games: ["analytics", "games"] as const,
 };
 
 /**
  * Time range filter
  */
 export interface TimeRangeFilter {
-  period?: 'day' | 'week' | 'month' | 'year' | 'all';
+  period?: "day" | "week" | "month" | "year" | "all";
   from_date?: string;
   to_date?: string;
 }
@@ -32,10 +37,14 @@ export function useDashboard() {
   return useQuery({
     queryKey: [...analyticsKeys.dashboard, selectedAccountId],
     queryFn: async () => {
-      const params = selectedAccountId ? `?account_id=${selectedAccountId}` : '';
-      const response = await api.get<DashboardData>(`/api/v1/analytics/dashboard${params}`);
+      const params = selectedAccountId
+        ? `?account_id=${selectedAccountId}`
+        : "";
+      const response = await api.get<DashboardData>(
+        `/api/v1/analytics/dashboard${params}`,
+      );
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch dashboard data');
+        throw new Error(response.error || "Failed to fetch dashboard data");
       }
       return response.data;
     },
@@ -67,24 +76,24 @@ export function useEntryStats(timeRange: TimeRangeFilter = {}) {
       const params = new URLSearchParams();
 
       if (timeRange.period) {
-        params.set('period', timeRange.period);
+        params.set("period", timeRange.period);
       }
       if (timeRange.from_date) {
-        params.set('from_date', timeRange.from_date);
+        params.set("from_date", timeRange.from_date);
       }
       if (timeRange.to_date) {
-        params.set('to_date', timeRange.to_date);
+        params.set("to_date", timeRange.to_date);
       }
       if (selectedAccountId) {
-        params.set('account_id', String(selectedAccountId));
+        params.set("account_id", String(selectedAccountId));
       }
 
       const queryString = params.toString();
-      const endpoint = `/api/v1/analytics/entries/summary${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `/api/v1/analytics/entries/summary${queryString ? `?${queryString}` : ""}`;
 
       const response = await api.get<EntrySummaryResponse>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch entry stats');
+        throw new Error(response.error || "Failed to fetch entry stats");
       }
       // Transform backend response to frontend format
       const data = response.data;
@@ -123,24 +132,24 @@ export function useGiveawayStats(timeRange: TimeRangeFilter = {}) {
       const params = new URLSearchParams();
 
       if (timeRange.period) {
-        params.set('period', timeRange.period);
+        params.set("period", timeRange.period);
       }
       if (timeRange.from_date) {
-        params.set('from_date', timeRange.from_date);
+        params.set("from_date", timeRange.from_date);
       }
       if (timeRange.to_date) {
-        params.set('to_date', timeRange.to_date);
+        params.set("to_date", timeRange.to_date);
       }
       if (selectedAccountId) {
-        params.set('account_id', String(selectedAccountId));
+        params.set("account_id", String(selectedAccountId));
       }
 
       const queryString = params.toString();
-      const endpoint = `/api/v1/analytics/giveaways/summary${queryString ? `?${queryString}` : ''}`;
+      const endpoint = `/api/v1/analytics/giveaways/summary${queryString ? `?${queryString}` : ""}`;
 
       const response = await api.get<GiveawaySummaryResponse>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch giveaway stats');
+        throw new Error(response.error || "Failed to fetch giveaway stats");
       }
       // Transform backend response to frontend format
       const data = response.data;
@@ -163,40 +172,11 @@ export function useGameStats() {
   return useQuery({
     queryKey: analyticsKeys.games,
     queryFn: async () => {
-      const response = await api.get<GameStats>('/api/v1/analytics/games/summary');
-      if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch game stats');
-      }
-      return response.data;
-    },
-  });
-}
-
-/**
- * Entry trend data point
- */
-export interface TrendDataPoint {
-  date: string;
-  entries: number;
-  points_spent: number;
-}
-
-/**
- * Fetch entry trends over time
- */
-export function useEntryTrends(period: 'week' | 'month' | 'year' = 'month') {
-  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
-
-  return useQuery({
-    queryKey: [...analyticsKeys.entries, 'trends', period, selectedAccountId],
-    queryFn: async () => {
-      const params = new URLSearchParams({ period });
-      if (selectedAccountId) params.set('account_id', String(selectedAccountId));
-      const response = await api.get<TrendDataPoint[]>(
-        `/api/v1/analytics/entries/trends?${params.toString()}`
+      const response = await api.get<GameStats>(
+        "/api/v1/analytics/games/summary",
       );
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch entry trends');
+        throw new Error(response.error || "Failed to fetch game stats");
       }
       return response.data;
     },

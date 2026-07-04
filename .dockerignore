@@ -1,0 +1,39 @@
+# Node
+frontend/node_modules
+frontend/dist
+frontend/dist-ssr
+frontend/coverage
+frontend/.vite
+
+# Python
+backend/.venv
+backend/venv
+backend/data
+backend/htmlcov
+backend/.pytest_cache
+backend/.ruff_cache
+backend/.mypy_cache
+backend/.coverage
+**/__pycache__
+*.egg-info
+
+# Git / editor / AI assistant
+.git
+.gitignore
+.claude
+CLAUDE.md
+.vscode
+.idea
+
+# Docs (backend/README.md is needed by the Dockerfile's COPY, keep it)
+docs
+CHANGELOG.md
+CONTRIBUTING.md
+*.md
+!backend/README.md
+
+# Docker volume / runtime data
+config
+*.db
+*.db-journal
+*.log

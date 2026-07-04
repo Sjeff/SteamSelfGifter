@@ -1,8 +1,15 @@
-import { useState } from 'react';
-import { ExternalLink, CheckCircle, XCircle, Clock, AlertCircle, Gift } from 'lucide-react';
-import { Card, Button, Badge, Input, CardSkeleton } from '@/components/common';
-import { useEntries, type EntryFilters } from '@/hooks';
-import type { EntryWithGiveaway } from '@/types';
+import { useState } from "react";
+import {
+  ExternalLink,
+  CheckCircle,
+  XCircle,
+  Clock,
+  AlertCircle,
+  Gift,
+} from "lucide-react";
+import { Card, Button, Badge, Input, CardSkeleton } from "@/components/common";
+import { useEntries, type EntryFilters } from "@/hooks";
+import type { EntryWithGiveaway } from "@/types";
 
 /**
  * History page
@@ -10,25 +17,25 @@ import type { EntryWithGiveaway } from '@/types';
  */
 export function History() {
   const [filters, setFilters] = useState<EntryFilters>({
-    status: 'all',
-    type: 'all',
+    status: "all",
+    type: "all",
     page: 1,
     limit: 20,
   });
-  const [dateRange, setDateRange] = useState({ from: '', to: '' });
+  const [dateRange, setDateRange] = useState({ from: "", to: "" });
 
   const { data, isLoading, error } = useEntries(filters);
 
-  const handleStatusFilter = (status: EntryFilters['status']) => {
-    setFilters(prev => ({ ...prev, status, page: 1 }));
+  const handleStatusFilter = (status: EntryFilters["status"]) => {
+    setFilters((prev) => ({ ...prev, status, page: 1 }));
   };
 
-  const handleTypeFilter = (type: EntryFilters['type']) => {
-    setFilters(prev => ({ ...prev, type, page: 1 }));
+  const handleTypeFilter = (type: EntryFilters["type"]) => {
+    setFilters((prev) => ({ ...prev, type, page: 1 }));
   };
 
   const handleDateFilter = () => {
-    setFilters(prev => ({
+    setFilters((prev) => ({
       ...prev,
       from_date: dateRange.from || undefined,
       to_date: dateRange.to || undefined,
@@ -37,8 +44,8 @@ export function History() {
   };
 
   const handleClearDates = () => {
-    setDateRange({ from: '', to: '' });
-    setFilters(prev => ({
+    setDateRange({ from: "", to: "" });
+    setFilters((prev) => ({
       ...prev,
       from_date: undefined,
       to_date: undefined,
@@ -47,13 +54,15 @@ export function History() {
   };
 
   const handlePageChange = (page: number) => {
-    setFilters(prev => ({ ...prev, page }));
+    setFilters((prev) => ({ ...prev, page }));
   };
 
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Entry History</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Entry History
+        </h1>
         <Card>
           <div className="flex items-center gap-3 text-red-500">
             <AlertCircle size={24} />
@@ -66,7 +75,9 @@ export function History() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Entry History</h1>
+      <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        Entry History
+      </h1>
 
       {/* Filters */}
       <Card>
@@ -78,26 +89,26 @@ export function History() {
             </label>
             <div className="flex flex-wrap gap-2">
               <FilterButton
-                active={filters.status === 'all'}
-                onClick={() => handleStatusFilter('all')}
+                active={filters.status === "all"}
+                onClick={() => handleStatusFilter("all")}
               >
                 All
               </FilterButton>
               <FilterButton
-                active={filters.status === 'success'}
-                onClick={() => handleStatusFilter('success')}
+                active={filters.status === "success"}
+                onClick={() => handleStatusFilter("success")}
               >
                 Success
               </FilterButton>
               <FilterButton
-                active={filters.status === 'failed'}
-                onClick={() => handleStatusFilter('failed')}
+                active={filters.status === "failed"}
+                onClick={() => handleStatusFilter("failed")}
               >
                 Failed
               </FilterButton>
               <FilterButton
-                active={filters.status === 'pending'}
-                onClick={() => handleStatusFilter('pending')}
+                active={filters.status === "pending"}
+                onClick={() => handleStatusFilter("pending")}
               >
                 Pending
               </FilterButton>
@@ -111,26 +122,26 @@ export function History() {
             </label>
             <div className="flex flex-wrap gap-2">
               <FilterButton
-                active={filters.type === 'all'}
-                onClick={() => handleTypeFilter('all')}
+                active={filters.type === "all"}
+                onClick={() => handleTypeFilter("all")}
               >
                 All
               </FilterButton>
               <FilterButton
-                active={filters.type === 'auto'}
-                onClick={() => handleTypeFilter('auto')}
+                active={filters.type === "auto"}
+                onClick={() => handleTypeFilter("auto")}
               >
                 Automatic
               </FilterButton>
               <FilterButton
-                active={filters.type === 'manual'}
-                onClick={() => handleTypeFilter('manual')}
+                active={filters.type === "manual"}
+                onClick={() => handleTypeFilter("manual")}
               >
                 Manual
               </FilterButton>
               <FilterButton
-                active={filters.type === 'wishlist'}
-                onClick={() => handleTypeFilter('wishlist')}
+                active={filters.type === "wishlist"}
+                onClick={() => handleTypeFilter("wishlist")}
               >
                 Wishlist
               </FilterButton>
@@ -146,14 +157,18 @@ export function History() {
               <Input
                 type="date"
                 value={dateRange.from}
-                onChange={(e) => setDateRange(prev => ({ ...prev, from: e.target.value }))}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, from: e.target.value }))
+                }
                 className="w-40"
               />
               <span className="text-gray-500">to</span>
               <Input
                 type="date"
                 value={dateRange.to}
-                onChange={(e) => setDateRange(prev => ({ ...prev, to: e.target.value }))}
+                onChange={(e) =>
+                  setDateRange((prev) => ({ ...prev, to: e.target.value }))
+                }
                 className="w-40"
               />
               <Button variant="secondary" size="sm" onClick={handleDateFilter}>
@@ -235,8 +250,8 @@ function FilterButton({ active, onClick, children }: FilterButtonProps) {
       onClick={onClick}
       className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
         active
-          ? 'bg-primary-light text-white'
-          : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+          ? "bg-primary-light text-white"
+          : "bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
       }`}
     >
       {children}
@@ -252,28 +267,28 @@ function EntryCard({ entry }: EntryCardProps) {
   const statusConfig = {
     success: {
       icon: CheckCircle,
-      color: 'text-green-500',
-      badge: 'success' as const,
-      label: 'Success',
+      color: "text-green-500",
+      badge: "success" as const,
+      label: "Success",
     },
     failed: {
       icon: XCircle,
-      color: 'text-red-500',
-      badge: 'error' as const,
-      label: 'Failed',
+      color: "text-red-500",
+      badge: "error" as const,
+      label: "Failed",
     },
     pending: {
       icon: Clock,
-      color: 'text-yellow-500',
-      badge: 'warning' as const,
-      label: 'Pending',
+      color: "text-yellow-500",
+      badge: "warning" as const,
+      label: "Pending",
     },
   };
 
   const typeLabels = {
-    auto: 'Automatic',
-    manual: 'Manual',
-    wishlist: 'Wishlist',
+    auto: "Automatic",
+    manual: "Manual",
+    wishlist: "Wishlist",
   };
 
   const config = statusConfig[entry.status];
@@ -299,8 +314,12 @@ function EntryCard({ entry }: EntryCardProps) {
               </p>
             </div>
             <div className="flex gap-2 shrink-0">
-              <Badge variant={config.badge} size="sm">{config.label}</Badge>
-              <Badge variant="default" size="sm">{typeLabels[entry.entry_type]}</Badge>
+              <Badge variant={config.badge} size="sm">
+                {config.label}
+              </Badge>
+              <Badge variant="default" size="sm">
+                {typeLabels[entry.entry_type]}
+              </Badge>
             </div>
           </div>
 
@@ -316,7 +335,7 @@ function EntryCard({ entry }: EntryCardProps) {
           </div>
 
           {/* Error message if failed */}
-          {entry.status === 'failed' && entry.error_message && (
+          {entry.status === "failed" && entry.error_message && (
             <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-sm text-sm text-red-600 dark:text-red-400">
               {entry.error_message}
             </div>

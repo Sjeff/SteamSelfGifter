@@ -5,6 +5,7 @@ This document defines the API contract between the backend and frontend services
 **Base URL:** `/api/v1`
 
 **Response Format:** All responses follow this structure:
+
 ```json
 {
   "success": true,
@@ -16,12 +17,15 @@ This document defines the API contract between the backend and frontend services
 ```
 
 **Error Format:**
+
 ```json
 {
   "detail": "Error message"
 }
 ```
+
 or
+
 ```json
 {
   "error": {
@@ -37,9 +41,11 @@ or
 ## Settings
 
 ### GET /settings/
+
 Get current application settings.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -69,9 +75,11 @@ Get current application settings.
 ```
 
 ### PUT /settings/
+
 Update application settings (partial updates supported).
 
 **Request Body:** (all fields optional)
+
 ```json
 {
   "phpsessid": "string",
@@ -95,9 +103,11 @@ Update application settings (partial updates supported).
 **Response:** Same as GET /settings/
 
 ### POST /settings/test-session
+
 Test if the configured PHPSESSID is valid.
 
 **Response (success):**
+
 ```json
 {
   "success": true,
@@ -110,6 +120,7 @@ Test if the configured PHPSESSID is valid.
 ```
 
 **Response (invalid session):**
+
 ```json
 {
   "success": true,
@@ -121,9 +132,11 @@ Test if the configured PHPSESSID is valid.
 ```
 
 ### POST /settings/validate
+
 Validate current configuration.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -140,9 +153,11 @@ Validate current configuration.
 ## Giveaways
 
 ### GET /giveaways/
+
 List giveaways with optional filters.
 
 **Query Parameters:**
+
 - `status`: `active` | `entered` | `all` (default: active)
 - `is_entered`: `true` | `false`
 - `is_hidden`: `true` | `false`
@@ -154,6 +169,7 @@ List giveaways with optional filters.
 - `offset`: number (default: 0)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -184,12 +200,15 @@ List giveaways with optional filters.
 ```
 
 ### GET /giveaways/{code}
+
 Get a single giveaway by code.
 
 **Path Parameters:**
+
 - `code`: string (SteamGifts giveaway code, e.g., "FDVzQ")
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -215,20 +234,25 @@ Get a single giveaway by code.
 ```
 
 ### POST /giveaways/{code}/enter
+
 Enter a giveaway.
 
 **Path Parameters:**
+
 - `code`: string (SteamGifts giveaway code)
 
 **Request Body:** (optional)
+
 ```json
 {
   "entry_type": "manual"
 }
 ```
+
 - `entry_type`: `manual` | `auto` | `wishlist` (default: manual)
 
 **Response (success):**
+
 ```json
 {
   "success": true,
@@ -242,6 +266,7 @@ Enter a giveaway.
 ```
 
 **Response (failure - 400):**
+
 ```json
 {
   "detail": "Already entered" | "Insufficient points" | "Giveaway ended"
@@ -249,12 +274,15 @@ Enter a giveaway.
 ```
 
 ### POST /giveaways/{code}/hide
+
 Hide a giveaway from recommendations.
 
 **Path Parameters:**
+
 - `code`: string (SteamGifts giveaway code)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -266,12 +294,15 @@ Hide a giveaway from recommendations.
 ```
 
 ### POST /giveaways/{code}/unhide
+
 Unhide a giveaway.
 
 **Path Parameters:**
+
 - `code`: string (SteamGifts giveaway code)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -285,12 +316,15 @@ Unhide a giveaway.
 **Status:** NOT IMPLEMENTED - needs to be added to backend
 
 ### POST /giveaways/sync
+
 Trigger a manual sync of giveaways from SteamGifts.
 
 **Query Parameters:**
+
 - `pages`: number (1-10, default: 3)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -307,15 +341,18 @@ Trigger a manual sync of giveaways from SteamGifts.
 ## Entries
 
 ### GET /entries/
+
 List entry history.
 
 **Query Parameters:**
+
 - `status`: `success` | `failed` | `all`
 - `type`: `manual` | `auto` | `wishlist`
 - `limit`: number (1-100, default: 50)
 - `offset`: number (default: 0)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -347,9 +384,11 @@ List entry history.
 ## Analytics
 
 ### GET /analytics/overview
+
 Get comprehensive analytics overview.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -377,9 +416,11 @@ Get comprehensive analytics overview.
 ```
 
 ### GET /analytics/entries/summary
+
 Get entry statistics summary.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -400,9 +441,11 @@ Get entry statistics summary.
 ```
 
 ### GET /analytics/giveaways/summary
+
 Get giveaway statistics summary.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -417,9 +460,11 @@ Get giveaway statistics summary.
 ```
 
 ### GET /analytics/games/summary
+
 Get game cache statistics.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -434,9 +479,11 @@ Get game cache statistics.
 ```
 
 ### GET /analytics/dashboard
+
 Get all dashboard data in a single request.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -478,9 +525,11 @@ Get all dashboard data in a single request.
 ## Scheduler
 
 ### GET /scheduler/status
+
 Get scheduler status.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -494,9 +543,11 @@ Get scheduler status.
 ```
 
 ### POST /scheduler/start
+
 Start the scheduler.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -508,9 +559,11 @@ Start the scheduler.
 ```
 
 ### POST /scheduler/stop
+
 Stop the scheduler.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -522,9 +575,11 @@ Stop the scheduler.
 ```
 
 ### POST /scheduler/scan
+
 Trigger a manual giveaway scan.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -539,17 +594,21 @@ Trigger a manual giveaway scan.
 ```
 
 ### POST /scheduler/scan/quick
+
 Trigger a quick scan (single page).
 
 **Response:** Same as POST /scheduler/scan
 
 ### POST /scheduler/enter/{giveaway_code}
+
 Manually enter a specific giveaway.
 
 **Path Parameters:**
+
 - `giveaway_code`: string (SteamGifts giveaway code)
 
 **Response (success):**
+
 ```json
 {
   "success": true,
@@ -566,9 +625,11 @@ Manually enter a specific giveaway.
 ## System
 
 ### GET /system/health
+
 Health check endpoint.
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -585,15 +646,18 @@ Health check endpoint.
 ## Logs
 
 ### GET /logs/
+
 Get activity logs.
 
 **Query Parameters:**
+
 - `level`: `info` | `warning` | `error`
 - `type`: `scan` | `entry` | `auth` | `system`
 - `limit`: number (1-100, default: 50)
 - `offset`: number (default: 0)
 
 **Response:**
+
 ```json
 {
   "success": true,
@@ -620,9 +684,11 @@ Get activity logs.
 ## WebSocket
 
 ### WS /ws
+
 WebSocket connection for real-time updates.
 
 **Events (server -> client):**
+
 ```json
 {
   "type": "scan_completed",
@@ -670,16 +736,17 @@ The following endpoints are expected by the frontend but not yet implemented:
 ## Type Definitions
 
 ### Giveaway
+
 ```typescript
 interface Giveaway {
   id: number;
-  code: string;              // SteamGifts giveaway code (e.g., "FDVzQ")
+  code: string; // SteamGifts giveaway code (e.g., "FDVzQ")
   url: string;
   game_id: number | null;
   game_name: string;
-  price: number;             // Points cost
+  price: number; // Points cost
   copies: number;
-  end_time: string | null;   // ISO datetime
+  end_time: string | null; // ISO datetime
   is_hidden: boolean;
   is_entered: boolean;
   is_safe: boolean;
@@ -692,13 +759,14 @@ interface Giveaway {
 ```
 
 ### Entry
+
 ```typescript
 interface Entry {
   id: number;
   giveaway_id: number;
   points_spent: number;
-  status: 'success' | 'failed';
-  entry_type: 'manual' | 'auto' | 'wishlist';
+  status: "success" | "failed";
+  entry_type: "manual" | "auto" | "wishlist";
   error_message: string | null;
   entered_at: string;
   created_at: string;
@@ -706,6 +774,7 @@ interface Entry {
 ```
 
 ### Settings
+
 ```typescript
 interface Settings {
   id: number;

@@ -4,12 +4,14 @@
 
 export const config = {
   // API base URL (empty in dev because of Vite proxy)
-  apiUrl: import.meta.env.VITE_API_URL || '',
+  apiUrl: import.meta.env.VITE_API_URL || "",
 
   // WebSocket URL
-  wsUrl: import.meta.env.VITE_WS_URL || `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${window.location.host}`,
+  wsUrl:
+    import.meta.env.VITE_WS_URL ||
+    `${window.location.protocol === "https:" ? "wss:" : "ws:"}//${window.location.host}`,
 
   // App info
-  appName: 'SteamSelfGifter',
-  version: '2.0.0',
+  appName: "SteamSelfGifter",
+  version: "2.0.0",
 } as const;

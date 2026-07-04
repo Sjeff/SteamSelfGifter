@@ -84,8 +84,34 @@ class SchedulerError(AppException):
     pass
 
 
+# Authentication errors
+class AuthenticationError(AppException):
+    """Not authenticated, or session invalid/expired"""
+
+    pass
+
+
+class InvalidCredentialsError(AppException):
+    """Login attempted with a wrong username or password"""
+
+    pass
+
+
+class AccountLockedError(AppException):
+    """Login temporarily blocked after too many failed attempts"""
+
+    pass
+
+
+class SetupAlreadyCompleteError(AppException):
+    """Setup wizard invoked after the admin account already exists"""
+
+    pass
+
+
 # Error code constants
 ERROR_CODES = {
+    "ACCT_001": "Account not found",
     "CONFIG_001": "SteamGifts credentials not configured",
     "CONFIG_002": "Invalid configuration",
     "CONFIG_003": "Invalid PHPSESSID",
@@ -107,4 +133,8 @@ ERROR_CODES = {
     "SCHED_003": "Scheduler error",
     "SYS_001": "Internal server error",
     "SYS_002": "Service unavailable",
+    "AUTH_001": "Not authenticated",
+    "AUTH_002": "Invalid username or password",
+    "AUTH_003": "Account temporarily locked",
+    "AUTH_004": "Setup already completed",
 }

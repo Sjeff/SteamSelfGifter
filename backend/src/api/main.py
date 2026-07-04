@@ -11,16 +11,21 @@ Creates and configures the FastAPI application with:
 from contextlib import asynccontextmanager
 
 import structlog
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from api.dependencies import get_current_user
 from api.middleware import (
+    account_locked_handler,
     app_exception_handler,
+    authentication_error_handler,
     configuration_error_handler,
     insufficient_points_handler,
+    invalid_credentials_handler,
     rate_limit_error_handler,
     resource_not_found_handler,
     scheduler_error_handler,
+    setup_already_complete_handler,
     steam_api_error_handler,
     steamgifts_error_handler,
     steamgifts_session_expired_handler,
@@ -28,17 +33,22 @@ from api.middleware import (
     unhandled_exception_handler,
     validation_error_handler,
 )
+from api.routers import auth as auth_router
 from api.routers import settings as settings_router
 from api.routers import system, websocket, scheduler, giveaways, games, entries, analytics
 from api.routers import accounts as accounts_router
 from core.config import settings
 from core.exceptions import (
+    AccountLockedError,
     AppException,
+    AuthenticationError,
     ConfigurationError,
     InsufficientPointsError,
+    InvalidCredentialsError,
     RateLimitError,
     ResourceNotFoundError,
     SchedulerError,
+    SetupAlreadyCompleteError,
     SteamAPIError,
     SteamGiftsError,
     SteamGiftsSessionExpiredError,
@@ -173,18 +183,35 @@ app.add_exception_handler(SteamAPIError, steam_api_error_handler)
 app.add_exception_handler(InsufficientPointsError, insufficient_points_handler)
 app.add_exception_handler(RateLimitError, rate_limit_error_handler)
 app.add_exception_handler(SchedulerError, scheduler_error_handler)
+app.add_exception_handler(AuthenticationError, authentication_error_handler)
+app.add_exception_handler(InvalidCredentialsError, invalid_credentials_handler)
+app.add_exception_handler(AccountLockedError, account_locked_handler)
+app.add_exception_handler(SetupAlreadyCompleteError, setup_already_complete_handler)
 app.add_exception_handler(Exception, unhandled_exception_handler)
+
+# Auth routes are intentionally unprotected (status/setup/login), except
+# /me and /change-password which use CurrentUserDep directly in auth.py.
+app.include_router(
+    auth_router.router,
+    prefix=f"{settings.api_v1_prefix}/auth",
+    tags=["auth"],
+)
+
+# Every other router requires a valid session cookie.
+protected = [Depends(get_current_user)]
 
 # Include API routers
 app.include_router(
     settings_router.router,
     prefix=f"{settings.api_v1_prefix}/settings",
     tags=["settings"],
+    dependencies=protected,
 )
 app.include_router(
     system.router,
     prefix=f"{settings.api_v1_prefix}/system",
     tags=["system"],
+    dependencies=protected,
 )
 app.include_router(
     websocket.router,
@@ -195,32 +222,38 @@ app.include_router(
     scheduler.router,
     prefix=f"{settings.api_v1_prefix}/scheduler",
     tags=["scheduler"],
+    dependencies=protected,
 )
 
 app.include_router(
     giveaways.router,
     prefix=f"{settings.api_v1_prefix}/giveaways",
     tags=["giveaways"],
+    dependencies=protected,
 )
 app.include_router(
     games.router,
     prefix=f"{settings.api_v1_prefix}/games",
     tags=["games"],
+    dependencies=protected,
 )
 app.include_router(
     entries.router,
     prefix=f"{settings.api_v1_prefix}/entries",
     tags=["entries"],
+    dependencies=protected,
 )
 app.include_router(
     analytics.router,
     prefix=f"{settings.api_v1_prefix}/analytics",
     tags=["analytics"],
+    dependencies=protected,
 )
 app.include_router(
     accounts_router.router,
     prefix=f"{settings.api_v1_prefix}/accounts",
     tags=["accounts"],
+    dependencies=protected,
 )
 
 

@@ -1,7 +1,7 @@
-import { Loader2 } from 'lucide-react';
-import { clsx } from 'clsx';
+import { Loader2 } from "lucide-react";
+import { clsx } from "clsx";
 
-type LoadingSize = 'sm' | 'md' | 'lg';
+type LoadingSize = "sm" | "md" | "lg";
 
 interface SpinnerProps {
   size?: LoadingSize;
@@ -20,9 +20,9 @@ const sizeStyles: Record<LoadingSize, number> = {
 };
 
 const textSizes: Record<LoadingSize, string> = {
-  sm: 'text-xs',
-  md: 'text-sm',
-  lg: 'text-base',
+  sm: "text-xs",
+  md: "text-sm",
+  lg: "text-base",
 };
 
 /**
@@ -31,11 +31,14 @@ const textSizes: Record<LoadingSize, string> = {
  * @example
  * <Spinner size="sm" />
  */
-export function Spinner({ size = 'md', className }: SpinnerProps) {
+export function Spinner({ size = "md", className }: SpinnerProps) {
   return (
     <Loader2
       size={sizeStyles[size]}
-      className={clsx('animate-spin text-primary-light dark:text-primary-dark', className)}
+      className={clsx(
+        "animate-spin text-primary-light dark:text-primary-dark",
+        className,
+      )}
     />
   );
 }
@@ -47,17 +50,24 @@ export function Spinner({ size = 'md', className }: SpinnerProps) {
  * <Loading text="Loading data..." />
  * <Loading fullScreen />
  */
-export function Loading({ size = 'md', text, fullScreen = false, className }: LoadingProps) {
+export function Loading({
+  size = "md",
+  text,
+  fullScreen = false,
+  className,
+}: LoadingProps) {
   const content = (
     <div
       className={clsx(
-        'flex flex-col items-center justify-center gap-2',
-        className
+        "flex flex-col items-center justify-center gap-2",
+        className,
       )}
     >
       <Spinner size={size} />
       {text && (
-        <p className={clsx('text-gray-500 dark:text-gray-400', textSizes[size])}>
+        <p
+          className={clsx("text-gray-500 dark:text-gray-400", textSizes[size])}
+        >
           {text}
         </p>
       )}
@@ -86,8 +96,8 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       className={clsx(
-        'animate-pulse rounded-sm bg-gray-200 dark:bg-gray-700',
-        className
+        "animate-pulse rounded-sm bg-gray-200 dark:bg-gray-700",
+        className,
       )}
     />
   );

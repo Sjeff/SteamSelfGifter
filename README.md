@@ -10,6 +10,7 @@ SteamSelfGifter is an automated bot for entering Steam game giveaways on SteamGi
 
 ## Features
 
+- **Login Protection**: A one-time setup wizard creates an admin account; the dashboard and its API require logging in
 - **Multi-Account Support**: Manage multiple SteamGifts accounts from a single dashboard, with an account switcher in the sidebar
 - **Per-Account Settings**: Every setting (DLC, Safety, Auto-Join Rules, Scheduler, Rate Limiting) is configurable independently per account
 - **Web Dashboard**: Modern React-based UI for monitoring and control
@@ -92,6 +93,12 @@ npm run dev  # Development server at http://localhost:5173
 
 ## Configuration
 
+### First run: account setup
+
+The first time you open the web interface, you'll be asked to create an admin username and password — this is a one-time setup, after which every visit requires logging in. Sessions last up to 24 hours or until you log out.
+
+If you run SteamSelfGifter over plain HTTP without a TLS reverse proxy in front of it (e.g. LAN-only access), set the `SESSION_COOKIE_SECURE=false` environment variable, otherwise the browser will refuse the login cookie and you won't be able to log in.
+
 Settings are configured **per account** via the Accounts page:
 
 1. Open the web interface
@@ -111,7 +118,7 @@ Settings are configured **per account** via the Accounts page:
 > Each account after the first receives a **5-minute scan start offset** to prevent simultaneous requests from the same IP. With a default scan interval of 30 minutes this works fine for up to 6 accounts. For more accounts, or if you use a shorter scan interval, you must increase the **Scan Interval** setting accordingly:
 >
 > | Accounts | Required scan interval |
-> |----------|------------------------|
+> | -------- | ---------------------- |
 > | 1        | any                    |
 > | 2        | > 5 min                |
 > | 3        | > 10 min               |
@@ -160,10 +167,12 @@ SteamSelfGifter/
 ## API Documentation
 
 Once the backend is running, visit:
+
 - Swagger UI: http://localhost:8000/docs
 - ReDoc: http://localhost:8000/redoc
 
 When running via Docker, the API is available at:
+
 - http://localhost:8080/api/v1/
 
 ## Development

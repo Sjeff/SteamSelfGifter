@@ -4,6 +4,42 @@ All notable changes to this project will be documented in this file.
 
 All changes were made in collaboration with [Claude](https://claude.ai) (Anthropic).
 
+## [3.1.0]
+
+### ⚠ Action Required
+
+- On first launch after upgrading, you'll be asked to create an admin username and password before the dashboard becomes accessible. This is a one-time setup — every request after that requires logging in.
+- If you run this app over plain HTTP without a TLS reverse proxy in front of it (e.g. LAN-only), set `SESSION_COOKIE_SECURE=false` in your environment, otherwise the login cookie won't be accepted by the browser and you won't be able to log in.
+
+### Security
+
+- Added a login gate: a single admin account (created via an in-app setup wizard) is now required to use the dashboard or its API. Sessions are server-side (stored in the database, survive a restart), identified by a random token — only its hash is persisted, never the raw value
+- Login lockout after 5 failed attempts (15 minutes)
+- Every API router and the `/ws/events` WebSocket now require a valid session, not just the frontend
+- Updated frontend dependencies (react-router, vite, vitest, postcss, and transitive packages) to resolve all `npm audit` findings — 14 vulnerabilities down to 0
+- Bumped all GitHub Actions (checkout, setup-python, setup-node, docker/*) to their latest major versions
+
+### Added
+
+- Setup wizard and login page; "Change password" and "Log out" controls on the Settings page
+
+### Performance
+
+- Docker image shrunk from 419MB to 371MB: added a missing `.dockerignore` (was letting the build accidentally copy `frontend/node_modules` from the host into the image), dropped `curl` in favor of a Python-based healthcheck, and dropped uvicorn's unused `[standard]` extra (uvloop/httptools/watchfiles aren't needed since the container never runs with `--reload`)
+
+### Removed
+
+- Deleted `backend/src/db/migrations/`, an orphaned duplicate of `backend/src/alembic/` left over from before the project moved its migrations there — nothing imported it, and its revision history had already diverged from the real one
+- Deleted `backend/src/db/seeds/` (an empty, unreferenced package) and `NotificationService.get_logs_count()` (unused method)
+- Deleted unused frontend hooks (`useGames`, `useSystem`, `useEntry`, `useHistory`, `useGiveaway`, `useRefreshGiveawayGame`, `useEntryTrends`, `useWebSocketAnyEvent`) and their now-unused types (`SystemInfo`, `HealthCheck`, `TrendDataPoint`, `GameFilters`) — none were wired into any page
+- Removed the unused `date-fns` dependency from `frontend/package.json`
+
+### Fixed
+
+- The Docker healthcheck and container `HEALTHCHECK` pinged `/api/v1/system/health`, which is now behind login — added an unauthenticated `/health` route so the container correctly reports "healthy" again
+- `vitest.config.ts` was missing the `__APP_VERSION__` define that `vite.config.ts` already had, crashing any test that rendered the sidebar
+- The sidebar was missing a link to the Settings page (the route existed but was only reachable by typing the URL directly)
+
 ## [3.0.5]
 
 ### Fixed

@@ -1,19 +1,19 @@
-import { ReactNode } from 'react';
-import { clsx } from 'clsx';
+import { ReactNode } from "react";
+import { clsx } from "clsx";
 
 interface CardProps {
   title?: string;
   children: ReactNode;
   className?: string;
-  padding?: 'none' | 'sm' | 'md' | 'lg';
+  padding?: "none" | "sm" | "md" | "lg";
   actions?: ReactNode;
 }
 
 const paddingStyles = {
-  none: '',
-  sm: 'p-3',
-  md: 'p-4',
-  lg: 'p-6',
+  none: "",
+  sm: "p-3",
+  md: "p-4",
+  lg: "p-6",
 };
 
 /**
@@ -32,14 +32,14 @@ export function Card({
   title,
   children,
   className,
-  padding = 'md',
+  padding = "md",
   actions,
 }: CardProps) {
   return (
     <div
       className={clsx(
-        'bg-white dark:bg-surface-dark rounded-lg border border-gray-200 dark:border-gray-700 shadow-xs',
-        className
+        "bg-white dark:bg-surface-dark rounded-lg border border-gray-200 dark:border-gray-700 shadow-xs",
+        className,
       )}
     >
       {/* Header with title and actions */}

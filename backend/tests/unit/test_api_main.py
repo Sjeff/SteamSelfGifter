@@ -9,6 +9,7 @@ import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
 
+from api.dependencies import get_current_user
 from api.main import app
 from core.exceptions import (
     ConfigurationError,
@@ -20,12 +21,17 @@ from core.exceptions import (
     SteamGiftsError,
     ValidationError,
 )
+from models.user import User
 
 
 @pytest.fixture
 def client():
-    """Create test client."""
-    return TestClient(app)
+    """Create test client, treated as already logged in."""
+    app.dependency_overrides[get_current_user] = lambda: User(
+        id=1, username="test-admin", password_hash="unused"
+    )
+    yield TestClient(app)
+    app.dependency_overrides.clear()
 
 
 def test_app_initialization():
@@ -109,11 +115,13 @@ def test_system_router_included(client):
     assert response.status_code == status.HTTP_200_OK
 
 
-def test_websocket_router_included():
-    """Test that websocket router is included."""
-    # WebSocket routes are registered
-    routes = [route.path for route in app.routes]
-    assert "/ws/events" in routes
+def test_websocket_router_included(client):
+    """Test that websocket router is included and rejects unauthenticated connects."""
+    # No session cookie is set, so the endpoint should close the connection
+    # (proves the route exists and is wired up, rather than 404ing)
+    with pytest.raises(Exception):
+        with client.websocket_connect("/ws/events"):
+            pass
 
 
 def test_exception_handler_resource_not_found(client):

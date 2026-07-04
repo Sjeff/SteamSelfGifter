@@ -7,14 +7,23 @@ services:
     ports:
       - "8080:80"
     volumes:
-      - ./config:/config:Z
+      - steamselfgifter-dev-data:/config
     environment:
       - ENVIRONMENT=production
       - DEBUG=false
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost/api/v1/system/health"]
+      test:
+        [
+          "CMD",
+          "python3",
+          "-c",
+          "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost/health', timeout=5).status == 200 else 1)",
+        ]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+
+volumes:
+  steamselfgifter-dev-data:

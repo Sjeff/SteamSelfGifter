@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { api } from './api';
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { api } from "./api";
 
-describe('ApiClient', () => {
+describe("ApiClient", () => {
   beforeEach(() => {
     // Mock fetch globally
     (globalThis as unknown as { fetch: typeof fetch }).fetch = vi.fn();
@@ -11,121 +11,150 @@ describe('ApiClient', () => {
     vi.restoreAllMocks();
   });
 
-  describe('get', () => {
-    it('should make a GET request and return data', async () => {
-      const mockResponse = { success: true, data: { id: 1, name: 'Test' } };
+  describe("get", () => {
+    it("should make a GET request and return data", async () => {
+      const mockResponse = { success: true, data: { id: 1, name: "Test" } };
       vi.mocked(fetch).mockResolvedValueOnce({
         json: () => Promise.resolve(mockResponse),
       } as Response);
 
-      const result = await api.get<{ id: number; name: string }>('/api/test');
+      const result = await api.get<{ id: number; name: string }>("/api/test");
 
-      expect(fetch).toHaveBeenCalledWith('/api/test', {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+      expect(fetch).toHaveBeenCalledWith("/api/test", {
+        method: "GET",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
       });
       expect(result).toEqual(mockResponse);
     });
 
-    it('should handle network errors', async () => {
-      vi.mocked(fetch).mockRejectedValueOnce(new Error('Network error'));
+    it("should handle network errors", async () => {
+      vi.mocked(fetch).mockRejectedValueOnce(new Error("Network error"));
 
-      const result = await api.get('/api/test');
+      const result = await api.get("/api/test");
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Network error');
+      expect(result.error).toBe("Network error");
     });
   });
 
-  describe('post', () => {
-    it('should make a POST request with body', async () => {
+  describe("post", () => {
+    it("should make a POST request with body", async () => {
       const mockResponse = { success: true, data: { created: true } };
       vi.mocked(fetch).mockResolvedValueOnce({
         json: () => Promise.resolve(mockResponse),
       } as Response);
 
-      const body = { name: 'New Item' };
-      const result = await api.post('/api/items', body);
+      const body = { name: "New Item" };
+      const result = await api.post("/api/items", body);
 
-      expect(fetch).toHaveBeenCalledWith('/api/items', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      expect(fetch).toHaveBeenCalledWith("/api/items", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       expect(result).toEqual(mockResponse);
     });
 
-    it('should make a POST request without body', async () => {
+    it("should make a POST request without body", async () => {
       const mockResponse = { success: true, data: null };
       vi.mocked(fetch).mockResolvedValueOnce({
         json: () => Promise.resolve(mockResponse),
       } as Response);
 
-      await api.post('/api/action');
+      await api.post("/api/action");
 
-      expect(fetch).toHaveBeenCalledWith('/api/action', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      expect(fetch).toHaveBeenCalledWith("/api/action", {
+        method: "POST",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: undefined,
       });
     });
   });
 
-  describe('put', () => {
-    it('should make a PUT request with body', async () => {
+  describe("put", () => {
+    it("should make a PUT request with body", async () => {
       const mockResponse = { success: true, data: { updated: true } };
       vi.mocked(fetch).mockResolvedValueOnce({
         json: () => Promise.resolve(mockResponse),
       } as Response);
 
-      const body = { name: 'Updated Item' };
-      const result = await api.put('/api/items/1', body);
+      const body = { name: "Updated Item" };
+      const result = await api.put("/api/items/1", body);
 
-      expect(fetch).toHaveBeenCalledWith('/api/items/1', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+      expect(fetch).toHaveBeenCalledWith("/api/items/1", {
+        method: "PUT",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       expect(result).toEqual(mockResponse);
     });
   });
 
-  describe('delete', () => {
-    it('should make a DELETE request', async () => {
+  describe("delete", () => {
+    it("should make a DELETE request", async () => {
       const mockResponse = { success: true, data: null };
       vi.mocked(fetch).mockResolvedValueOnce({
         json: () => Promise.resolve(mockResponse),
       } as Response);
 
-      const result = await api.delete('/api/items/1');
+      const result = await api.delete("/api/items/1");
 
-      expect(fetch).toHaveBeenCalledWith('/api/items/1', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+      expect(fetch).toHaveBeenCalledWith("/api/items/1", {
+        method: "DELETE",
+        credentials: "include",
+        headers: { "Content-Type": "application/json" },
       });
       expect(result).toEqual(mockResponse);
     });
   });
 
-  describe('error handling', () => {
-    it('should handle JSON parse errors', async () => {
+  describe("error handling", () => {
+    it("should handle JSON parse errors", async () => {
       vi.mocked(fetch).mockResolvedValueOnce({
-        json: () => Promise.reject(new Error('Invalid JSON')),
+        json: () => Promise.reject(new Error("Invalid JSON")),
       } as Response);
 
-      const result = await api.get('/api/test');
+      const result = await api.get("/api/test");
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Invalid JSON');
+      expect(result.error).toBe("Invalid JSON");
     });
 
-    it('should handle unknown errors', async () => {
-      vi.mocked(fetch).mockRejectedValueOnce('Unknown error type');
+    it("should handle unknown errors", async () => {
+      vi.mocked(fetch).mockRejectedValueOnce("Unknown error type");
 
-      const result = await api.get('/api/test');
+      const result = await api.get("/api/test");
 
       expect(result.success).toBe(false);
-      expect(result.error).toBe('Unknown error');
+      expect(result.error).toBe("Unknown error");
+    });
+
+    it("should normalize the backend's exception-handler error shape into a string", async () => {
+      // api/middleware.py's exception handlers respond with
+      // { error: { message, code, details } } and no success/data keys,
+      // unlike the { success, data, meta } shape normal responses use.
+      vi.mocked(fetch).mockResolvedValueOnce({
+        json: () =>
+          Promise.resolve({
+            error: {
+              message:
+                "Could not extract XSRF token - session expired or invalid",
+              code: "SG_004",
+              details: { reason: "xsrf_token_not_found" },
+            },
+          }),
+      } as Response);
+
+      const result = await api.post("/api/v1/scheduler/sync-wins");
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe(
+        "Could not extract XSRF token - session expired or invalid",
+      );
     });
   });
 });

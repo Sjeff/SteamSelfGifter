@@ -1,14 +1,20 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/services/api';
-import type { SchedulerStatus, ScanResult, ProcessResult, WinSyncResult, AutomationCycleResult } from '@/types';
-import { useAccountStore } from '@/stores/accountStore';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { api } from "@/services/api";
+import type {
+  SchedulerStatus,
+  ScanResult,
+  ProcessResult,
+  WinSyncResult,
+  AutomationCycleResult,
+} from "@/types";
+import { useAccountStore } from "@/stores/accountStore";
 
 /**
  * Query keys for scheduler
  */
 export const schedulerKeys = {
-  all: ['scheduler'] as const,
-  status: ['scheduler', 'status'] as const,
+  all: ["scheduler"] as const,
+  status: ["scheduler", "status"] as const,
 };
 
 /**
@@ -22,10 +28,10 @@ export function useSchedulerStatus() {
     queryFn: async () => {
       const endpoint = selectedAccountId
         ? `/api/v1/accounts/${selectedAccountId}/scheduler/status`
-        : '/api/v1/scheduler/status';
+        : "/api/v1/scheduler/status";
       const response = await api.get<SchedulerStatus>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to fetch scheduler status');
+        throw new Error(response.error || "Failed to fetch scheduler status");
       }
       return response.data;
     },
@@ -45,10 +51,10 @@ export function useStartScheduler() {
     mutationFn: async () => {
       const endpoint = selectedAccountId
         ? `/api/v1/accounts/${selectedAccountId}/scheduler/start`
-        : '/api/v1/scheduler/start';
+        : "/api/v1/scheduler/start";
       const response = await api.post<SchedulerStatus>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to start scheduler');
+        throw new Error(response.error || "Failed to start scheduler");
       }
       return response.data;
     },
@@ -69,10 +75,10 @@ export function useStopScheduler() {
     mutationFn: async () => {
       const endpoint = selectedAccountId
         ? `/api/v1/accounts/${selectedAccountId}/scheduler/stop`
-        : '/api/v1/scheduler/stop';
+        : "/api/v1/scheduler/stop";
       const response = await api.post<SchedulerStatus>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to stop scheduler');
+        throw new Error(response.error || "Failed to stop scheduler");
       }
       return response.data;
     },
@@ -90,9 +96,11 @@ export function usePauseScheduler() {
 
   return useMutation({
     mutationFn: async () => {
-      const response = await api.post<SchedulerStatus>('/api/v1/scheduler/pause');
+      const response = await api.post<SchedulerStatus>(
+        "/api/v1/scheduler/pause",
+      );
       if (!response.success) {
-        throw new Error(response.error || 'Failed to pause scheduler');
+        throw new Error(response.error || "Failed to pause scheduler");
       }
       return response.data;
     },
@@ -110,9 +118,11 @@ export function useResumeScheduler() {
 
   return useMutation({
     mutationFn: async () => {
-      const response = await api.post<SchedulerStatus>('/api/v1/scheduler/resume');
+      const response = await api.post<SchedulerStatus>(
+        "/api/v1/scheduler/resume",
+      );
       if (!response.success) {
-        throw new Error(response.error || 'Failed to resume scheduler');
+        throw new Error(response.error || "Failed to resume scheduler");
       }
       return response.data;
     },
@@ -133,16 +143,16 @@ export function useTriggerScan() {
     mutationFn: async () => {
       const endpoint = selectedAccountId
         ? `/api/v1/accounts/${selectedAccountId}/scheduler/scan`
-        : '/api/v1/scheduler/scan';
+        : "/api/v1/scheduler/scan";
       const response = await api.post<ScanResult>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to trigger scan');
+        throw new Error(response.error || "Failed to trigger scan");
       }
       return response.data;
     },
     onSuccess: () => {
       // Invalidate giveaways since scan may find new ones
-      queryClient.invalidateQueries({ queryKey: ['giveaways'] });
+      queryClient.invalidateQueries({ queryKey: ["giveaways"] });
       queryClient.invalidateQueries({ queryKey: schedulerKeys.all });
     },
   });
@@ -159,17 +169,17 @@ export function useTriggerProcess() {
     mutationFn: async () => {
       const endpoint = selectedAccountId
         ? `/api/v1/accounts/${selectedAccountId}/scheduler/process`
-        : '/api/v1/scheduler/process';
+        : "/api/v1/scheduler/process";
       const response = await api.post<ProcessResult>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to trigger process');
+        throw new Error(response.error || "Failed to trigger process");
       }
       return response.data;
     },
     onSuccess: () => {
       // Invalidate entries and giveaways since process creates entries
-      queryClient.invalidateQueries({ queryKey: ['entries'] });
-      queryClient.invalidateQueries({ queryKey: ['giveaways'] });
+      queryClient.invalidateQueries({ queryKey: ["entries"] });
+      queryClient.invalidateQueries({ queryKey: ["giveaways"] });
       queryClient.invalidateQueries({ queryKey: schedulerKeys.all });
     },
   });
@@ -186,16 +196,16 @@ export function useSyncWins() {
     mutationFn: async () => {
       const endpoint = selectedAccountId
         ? `/api/v1/accounts/${selectedAccountId}/scheduler/sync-wins`
-        : '/api/v1/scheduler/sync-wins';
+        : "/api/v1/scheduler/sync-wins";
       const response = await api.post<WinSyncResult>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to sync wins');
+        throw new Error(response.error || "Failed to sync wins");
       }
       return response.data;
     },
     onSuccess: () => {
       // Invalidate giveaways since wins status may change
-      queryClient.invalidateQueries({ queryKey: ['giveaways'] });
+      queryClient.invalidateQueries({ queryKey: ["giveaways"] });
       queryClient.invalidateQueries({ queryKey: schedulerKeys.all });
     },
   });
@@ -213,17 +223,17 @@ export function useRunAutomationCycle() {
       // Use account-specific endpoint if an account is selected
       const endpoint = selectedAccountId
         ? `/api/v1/accounts/${selectedAccountId}/scheduler/run`
-        : '/api/v1/scheduler/run';
+        : "/api/v1/scheduler/run";
       const response = await api.post<AutomationCycleResult>(endpoint);
       if (!response.success) {
-        throw new Error(response.error || 'Failed to run automation cycle');
+        throw new Error(response.error || "Failed to run automation cycle");
       }
       return response.data;
     },
     onSuccess: () => {
       // Invalidate all relevant queries
-      queryClient.invalidateQueries({ queryKey: ['giveaways'] });
-      queryClient.invalidateQueries({ queryKey: ['entries'] });
+      queryClient.invalidateQueries({ queryKey: ["giveaways"] });
+      queryClient.invalidateQueries({ queryKey: ["entries"] });
       queryClient.invalidateQueries({ queryKey: schedulerKeys.all });
     },
   });

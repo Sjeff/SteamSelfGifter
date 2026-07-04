@@ -33,6 +33,13 @@ class Settings(BaseSettings):
     # Scheduler
     scheduler_timezone: str = "UTC"
 
+    # Auth
+    # Set to false via env var (SESSION_COOKIE_SECURE=false) when serving
+    # the app over plain HTTP (e.g. LAN-only, no reverse proxy/TLS) —
+    # browsers silently drop cookies marked Secure over an insecure origin.
+    session_cookie_secure: bool = True
+    session_lifetime_hours: int = 24
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

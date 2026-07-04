@@ -1,5 +1,5 @@
-import { InputHTMLAttributes, forwardRef } from 'react';
-import { clsx } from 'clsx';
+import { InputHTMLAttributes, forwardRef } from "react";
+import { clsx } from "clsx";
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
@@ -17,7 +17,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 export const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ label, error, helperText, className, id, ...props }, ref) => {
     // Generate ID if not provided
-    const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+    const inputId =
+      id || (label ? label.toLowerCase().replace(/\s+/g, "-") : undefined);
 
     return (
       <div className="w-full">
@@ -37,23 +38,27 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           id={inputId}
           className={clsx(
             // Base styles
-            'w-full rounded-lg border px-3 py-2 text-sm',
-            'bg-white dark:bg-gray-800',
-            'text-gray-900 dark:text-gray-100',
-            'placeholder-gray-400 dark:placeholder-gray-500',
-            'focus:outline-hidden focus:ring-2 focus:ring-offset-0',
+            "w-full rounded-lg border px-3 py-2 text-sm",
+            "bg-white dark:bg-gray-800",
+            "text-gray-900 dark:text-gray-100",
+            "placeholder-gray-400 dark:placeholder-gray-500",
+            "focus:outline-hidden focus:ring-2 focus:ring-offset-0",
             // Error state
             error
-              ? 'border-error-light dark:border-error-dark focus:ring-error-light dark:focus:ring-error-dark'
-              : 'border-gray-300 dark:border-gray-600 focus:ring-primary-light dark:focus:ring-primary-dark focus:border-transparent',
+              ? "border-error-light dark:border-error-dark focus:ring-error-light dark:focus:ring-error-dark"
+              : "border-gray-300 dark:border-gray-600 focus:ring-primary-light dark:focus:ring-primary-dark focus:border-transparent",
             // Disabled state
-            'disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-900',
+            "disabled:opacity-50 disabled:cursor-not-allowed disabled:bg-gray-100 dark:disabled:bg-gray-900",
             // Custom classes
-            className
+            className,
           )}
-          aria-invalid={error ? 'true' : undefined}
+          aria-invalid={error ? "true" : undefined}
           aria-describedby={
-            error ? `${inputId}-error` : helperText ? `${inputId}-helper` : undefined
+            error
+              ? `${inputId}-error`
+              : helperText
+                ? `${inputId}-helper`
+                : undefined
           }
           {...props}
         />
@@ -80,7 +85,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
         )}
       </div>
     );
-  }
+  },
 );
 
-Input.displayName = 'Input';
+Input.displayName = "Input";

@@ -8,10 +8,21 @@ from api.routers.websocket import websocket_endpoint
 from core.events import EventManager
 
 
+@pytest.fixture(autouse=True)
+def mock_valid_session():
+    """All tests in this file simulate an already-authenticated connection."""
+    with patch(
+        "api.routers.websocket.AuthService.validate_session",
+        new=AsyncMock(return_value=MagicMock()),
+    ):
+        yield
+
+
 @pytest.fixture
 def mock_websocket():
-    """Create a mock WebSocket connection."""
+    """Create a mock WebSocket connection with a valid session cookie."""
     ws = MagicMock()
+    ws.cookies = {"session_token": "test-token"}
     ws.accept = AsyncMock()
     ws.receive_text = AsyncMock()
     ws.send_text = AsyncMock()
@@ -138,10 +149,12 @@ async def test_websocket_endpoint_ignores_client_messages(mock_websocket, mock_e
 async def test_websocket_endpoint_multiple_sequential_connections(mock_event_manager):
     """Test handling multiple connections sequentially."""
     ws1 = MagicMock()
+    ws1.cookies = {"session_token": "test-token"}
     ws1.accept = AsyncMock()
     ws1.receive_text = AsyncMock(side_effect=WebSocketDisconnect())
 
     ws2 = MagicMock()
+    ws2.cookies = {"session_token": "test-token"}
     ws2.accept = AsyncMock()
     ws2.receive_text = AsyncMock(side_effect=WebSocketDisconnect())
 

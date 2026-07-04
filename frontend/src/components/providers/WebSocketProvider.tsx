@@ -5,9 +5,9 @@
  * Should be placed inside QueryClientProvider.
  */
 
-import { type ReactNode } from 'react';
-import { useWebSocket } from '@/hooks';
-import { WebSocketContext } from './WebSocketContext';
+import { type ReactNode } from "react";
+import { useWebSocket } from "@/hooks";
+import { WebSocketContext } from "./WebSocketContext";
 
 interface WebSocketProviderProps {
   children: ReactNode;

@@ -1,5 +1,5 @@
-import { BrowserRouter } from 'react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // Create a fresh QueryClient for each test
 function createTestQueryClient() {
@@ -7,7 +7,7 @@ function createTestQueryClient() {
     defaultOptions: {
       queries: {
         retry: false, // Don't retry in tests
-        gcTime: 0,    // Don't cache in tests
+        gcTime: 0, // Don't cache in tests
       },
     },
   });
@@ -22,9 +22,7 @@ export function TestProviders({ children }: TestProvidersProps) {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {children}
-      </BrowserRouter>
+      <BrowserRouter>{children}</BrowserRouter>
     </QueryClientProvider>
   );
 }

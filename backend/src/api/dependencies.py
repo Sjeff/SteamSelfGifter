@@ -5,11 +5,14 @@ enabling clean dependency injection of database sessions and service layers.
 """
 
 from typing import Annotated, Optional
-from fastapi import Depends
+from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 import structlog
 
+from core.exceptions import AuthenticationError
 from db.session import get_db
+from models.user import User
+from services.auth_service import AuthService
 from services.settings_service import SettingsService
 from services.notification_service import NotificationService
 from services.game_service import GameService
@@ -18,6 +21,8 @@ from services.scheduler_service import SchedulerService
 from services.account_service import AccountService
 from utils.steam_client import SteamClient
 from utils.steamgifts_client import SteamGiftsClient
+
+SESSION_COOKIE_NAME = "session_token"
 
 logger = structlog.get_logger()
 
@@ -125,6 +130,29 @@ def get_account_service(db: DatabaseDep) -> AccountService:
 
 
 AccountServiceDep = Annotated[AccountService, Depends(get_account_service)]
+
+
+def get_auth_service(db: DatabaseDep) -> AuthService:
+    """Get AuthService dependency."""
+    return AuthService(db)
+
+
+AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
+
+
+async def get_current_user(request: Request, auth_service: AuthServiceDep) -> User:
+    """Resolve the logged-in user from the session cookie.
+
+    Raises AuthenticationError (-> 401) if the cookie is missing or invalid.
+    Add this as a router-level dependency to protect every route in it.
+    """
+    token = request.cookies.get(SESSION_COOKIE_NAME)
+    if not token:
+        raise AuthenticationError(message="Not authenticated", code="AUTH_001")
+    return await auth_service.validate_session(token)
+
+
+CurrentUserDep = Annotated[User, Depends(get_current_user)]
 
 
 async def get_giveaway_service(

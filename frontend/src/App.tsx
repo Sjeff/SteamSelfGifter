@@ -1,21 +1,21 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from "react-router";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { useEffect } from "react";
 
-import { Layout } from '@/components/layout/Layout';
-import { WebSocketProvider } from '@/components/providers';
-import { initializeTheme } from '@/stores/themeStore';
-import { useSchedulerStatus } from '@/hooks';
+import { Layout } from "@/components/layout/Layout";
+import { AuthProvider, WebSocketProvider } from "@/components/providers";
+import { initializeTheme } from "@/stores/themeStore";
+import { useSchedulerStatus } from "@/hooks";
 
 // Pages
-import { Dashboard } from '@/pages/Dashboard';
-import { Giveaways } from '@/pages/Giveaways';
-import { Wins } from '@/pages/Wins';
-import { History } from '@/pages/History';
-import { Analytics } from '@/pages/Analytics';
-import { Settings } from '@/pages/Settings';
-import { Logs } from '@/pages/Logs';
-import { Accounts } from '@/pages/Accounts';
+import { Dashboard } from "@/pages/Dashboard";
+import { Giveaways } from "@/pages/Giveaways";
+import { Wins } from "@/pages/Wins";
+import { History } from "@/pages/History";
+import { Analytics } from "@/pages/Analytics";
+import { Settings } from "@/pages/Settings";
+import { Logs } from "@/pages/Logs";
+import { Accounts } from "@/pages/Accounts";
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -73,9 +73,11 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <WebSocketProvider>
-        <AppContent />
-      </WebSocketProvider>
+      <AuthProvider>
+        <WebSocketProvider>
+          <AppContent />
+        </WebSocketProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }

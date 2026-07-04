@@ -38,8 +38,8 @@ export interface Entry {
   id: number;
   giveaway_id: number;
   points_spent: number;
-  entry_type: 'manual' | 'auto' | 'wishlist';
-  status: 'success' | 'failed' | 'pending';
+  entry_type: "manual" | "auto" | "wishlist";
+  status: "success" | "failed" | "pending";
   entered_at: string;
   error_message: string | null;
   created_at: string;
@@ -55,7 +55,7 @@ export interface EntryWithGiveaway extends Entry {
 export interface Game {
   id: number;
   name: string;
-  type: 'game' | 'dlc' | 'bundle';
+  type: "game" | "dlc" | "bundle";
   release_date: string | null;
   review_score: number | null;
   total_positive: number | null;
@@ -193,27 +193,13 @@ export interface DashboardData {
 // Activity log
 export interface ActivityLog {
   id: number;
-  level: 'info' | 'warning' | 'error';
-  event_type: 'scan' | 'entry' | 'error' | 'config' | 'scheduler';
+  level: "info" | "warning" | "error";
+  event_type: "scan" | "entry" | "error" | "config" | "scheduler";
   message: string;
   details: string | null;
   account_id: number | null;
   account_name: string | null;
   created_at: string;
-}
-
-// System info
-export interface SystemInfo {
-  app_name: string;
-  version: string;
-  debug: boolean;
-  database: string;
-}
-
-export interface HealthCheck {
-  status: string;
-  timestamp: string;
-  version: string;
 }
 
 // Scan result

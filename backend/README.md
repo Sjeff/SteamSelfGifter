@@ -47,6 +47,7 @@ uvicorn api.main:app --reload --port 8000
 ```
 
 API available at:
+
 - REST API: http://localhost:8000
 - Swagger UI: http://localhost:8000/docs
 - WebSocket: ws://localhost:8000/ws/events

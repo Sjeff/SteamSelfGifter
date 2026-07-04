@@ -10,12 +10,25 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from core.config import settings
 from models.base import Base
+from models.user import User
 from db.session import get_db
-from api.dependencies import get_database
+from api.dependencies import get_current_user, get_database
 from api.main import app
 from workers import scheduler as scheduler_module
 from workers.scheduler import SchedulerManager
+
+
+# The test client talks to the app over plain http (base_url="http://test"),
+# so a Secure-flagged cookie would never be sent back — same as a real LAN
+# deployment without TLS in front of it.
+settings.session_cookie_secure = False
+
+
+def _fake_current_user() -> User:
+    """Stand-in for the logged-in user so existing tests don't need real auth."""
+    return User(id=1, username="test-admin", password_hash="unused")
 
 
 # Use in-memory SQLite for tests
@@ -122,6 +135,10 @@ async def test_client(async_engine) -> AsyncGenerator[AsyncClient, None]:
     # Override both get_db and get_database to ensure all dependency paths work
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_database] = override_get_db
+    # Existing tests predate auth and don't log in — treat every request as
+    # already authenticated. test_api_routers_auth.py tests the real flow
+    # by clearing this override.
+    app.dependency_overrides[get_current_user] = _fake_current_user
 
     # Create async client
     transport = ASGITransport(app=app)
@@ -160,6 +177,7 @@ def sync_test_client(async_engine) -> Generator[TestClient, None, None]:
     # Override both get_db and get_database
     app.dependency_overrides[get_db] = override_get_db
     app.dependency_overrides[get_database] = override_get_db
+    app.dependency_overrides[get_current_user] = _fake_current_user
 
     with TestClient(app) as client:
         yield client

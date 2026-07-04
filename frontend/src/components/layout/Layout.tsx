@@ -1,7 +1,7 @@
-import { ReactNode } from 'react';
-import { Header } from './Header';
-import { Sidebar } from './Sidebar';
-import { Notifications } from '@/components/common/Notifications';
+import { ReactNode } from "react";
+import { Header } from "./Header";
+import { Sidebar } from "./Sidebar";
+import { Notifications } from "@/components/common/Notifications";
 
 interface LayoutProps {
   children: ReactNode;
@@ -12,7 +12,11 @@ interface LayoutProps {
 /**
  * Main application layout with header, sidebar, and content area
  */
-export function Layout({ children, schedulerRunning, schedulerPaused }: LayoutProps) {
+export function Layout({
+  children,
+  schedulerRunning,
+  schedulerPaused,
+}: LayoutProps) {
   return (
     <div className="min-h-screen bg-background-light dark:bg-background-dark transition-colors">
       <Header
@@ -24,9 +28,7 @@ export function Layout({ children, schedulerRunning, schedulerPaused }: LayoutPr
         <Sidebar />
 
         {/* Main content area */}
-        <main className="flex-1 p-6">
-          {children}
-        </main>
+        <main className="flex-1 p-6">{children}</main>
       </div>
 
       {/* Toast notifications */}

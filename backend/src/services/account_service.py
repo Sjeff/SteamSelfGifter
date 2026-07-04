@@ -48,7 +48,7 @@ class AccountService:
         """
         account = await self.repo.get_by_id(account_id)
         if not account:
-            raise ResourceNotFoundError(f"Account {account_id} not found")
+            raise ResourceNotFoundError(f"Account {account_id} not found", code="ACCT_001")
         return account
 
     async def get_default_account(self) -> Account:
@@ -212,7 +212,7 @@ class AccountService:
         """Set an account as the default."""
         account = await self.repo.set_default(account_id)
         if not account:
-            raise ResourceNotFoundError(f"Account {account_id} not found")
+            raise ResourceNotFoundError(f"Account {account_id} not found", code="ACCT_001")
         await self.session.commit()
         return account
 

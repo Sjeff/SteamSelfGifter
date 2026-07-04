@@ -12,7 +12,7 @@ export {
   useStartAccountAutomation,
   useStopAccountAutomation,
   accountKeys,
-} from './useAccounts';
+} from "./useAccounts";
 
 // Settings hooks
 export {
@@ -21,7 +21,7 @@ export {
   useValidateConfig,
   useTestSession,
   settingsKeys,
-} from './useSettings';
+} from "./useSettings";
 
 // Scheduler hooks
 export {
@@ -34,33 +34,25 @@ export {
   useTriggerProcess,
   useSchedulerControl,
   schedulerKeys,
-} from './useScheduler';
+} from "./useScheduler";
 
 // Giveaway hooks
 export {
   useGiveaways,
   useInfiniteGiveaways,
-  useGiveaway,
   useEnterGiveaway,
   useHideGiveaway,
   useUnhideGiveaway,
   useRemoveEntry,
-  useRefreshGiveawayGame,
   useCheckGiveawaySafety,
   useHideOnSteamGifts,
   usePostComment,
   giveawayKeys,
   type GiveawayFilters,
-} from './useGiveaways';
+} from "./useGiveaways";
 
 // Entry hooks
-export {
-  useEntries,
-  useEntry,
-  useHistory,
-  entryKeys,
-  type EntryFilters,
-} from './useEntries';
+export { useEntries, entryKeys, type EntryFilters } from "./useEntries";
 
 // Analytics hooks
 export {
@@ -68,11 +60,9 @@ export {
   useEntryStats,
   useGiveawayStats,
   useGameStats,
-  useEntryTrends,
   analyticsKeys,
   type TimeRangeFilter,
-  type TrendDataPoint,
-} from './useAnalytics';
+} from "./useAnalytics";
 
 // Log hooks
 export {
@@ -81,35 +71,30 @@ export {
   useExportLogs,
   logKeys,
   type LogFilters,
-} from './useLogs';
-
-// Game hooks
-export {
-  useGames,
-  useGame,
-  useRefreshGame,
-  useRefreshStaleGames,
-  gameKeys,
-  type GameFilters,
-} from './useGames';
-
-// System hooks
-export {
-  useHealthCheck,
-  useSystemInfo,
-  systemKeys,
-} from './useSystem';
+} from "./useLogs";
 
 // WebSocket hooks
 export {
   useWebSocket,
   useWebSocketConnection,
   useWebSocketEvent,
-  useWebSocketAnyEvent,
   useWebSocketNotifications,
   useWebSocketQueryInvalidation,
   useScanProgress,
-} from './useWebSocket';
+} from "./useWebSocket";
 
 // WebSocket status hook (for accessing provider context)
-export { useWebSocketStatus } from './useWebSocketStatus';
+export { useWebSocketStatus } from "./useWebSocketStatus";
+
+// Auth hooks
+export {
+  useAuthStatus,
+  useCurrentUser,
+  useSetup,
+  useLogin,
+  useLogout,
+  useChangePassword,
+  authKeys,
+  type AuthUser,
+  type AuthStatus,
+} from "./useAuth";

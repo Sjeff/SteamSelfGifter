@@ -46,7 +46,6 @@ FROM python:3.13-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     supervisor \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for backend process
@@ -85,6 +84,13 @@ server {
     # Handle SPA routing
     location / {
         try_files $uri $uri/ /index.html;
+    }
+
+    # Unauthenticated health check for the container HEALTHCHECK / orchestrators.
+    # Proxied directly to the backend (not under /api/) so it isn't gated by login.
+    location = /health {
+        proxy_pass http://127.0.0.1:8000/health;
+        proxy_set_header Host $host;
     }
 
     # Proxy API requests to backend
@@ -151,9 +157,9 @@ SUPERVISOR_CONF
 # Expose port 80 (nginx serves both frontend and proxies to backend)
 EXPOSE 80
 
-# Health check
+# Health check (uses the venv's Python instead of installing curl)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -f http://localhost/api/v1/system/health || exit 1
+    CMD python3 -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost/health', timeout=5).status == 200 else 1)" || exit 1
 
 # Start supervisor (manages nginx + uvicorn)
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]

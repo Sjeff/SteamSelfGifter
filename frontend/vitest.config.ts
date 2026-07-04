@@ -1,37 +1,41 @@
-import { defineConfig } from 'vitest/config';
-import react from '@vitejs/plugin-react';
-import path from 'path';
+import { defineConfig } from "vitest/config";
+import react from "@vitejs/plugin-react";
+import path from "path";
+import pkg from "../package.json";
 
 export default defineConfig({
   plugins: [react()],
+  define: {
+    __APP_VERSION__: JSON.stringify(pkg.version),
+  },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     },
   },
   test: {
     // Use jsdom for DOM testing
-    environment: 'jsdom',
+    environment: "jsdom",
 
     // Enable globals (describe, it, expect, etc.)
     globals: true,
 
     // Setup file for test utilities
-    setupFiles: ['./src/test/setup.ts'],
+    setupFiles: ["./src/test/setup.ts"],
 
     // Include patterns
-    include: ['src/**/*.{test,spec}.{ts,tsx}'],
+    include: ["src/**/*.{test,spec}.{ts,tsx}"],
 
     // Coverage configuration
     coverage: {
-      provider: 'v8',
-      reporter: ['text', 'html', 'lcov'],
+      provider: "v8",
+      reporter: ["text", "html", "lcov"],
       exclude: [
-        'node_modules/',
-        'src/test/',
-        '**/*.d.ts',
-        'src/main.tsx',
-        'src/vite-env.d.ts',
+        "node_modules/",
+        "src/test/",
+        "**/*.d.ts",
+        "src/main.tsx",
+        "src/vite-env.d.ts",
       ],
     },
 
