@@ -6,6 +6,10 @@ All changes were made in collaboration with [Claude](https://claude.ai) (Anthrop
 
 ## [3.1.1]
 
+### Security
+
+- Added an explicit `permissions: contents: read` block to `.github/workflows/test.yml` (CodeQL: "Workflow does not contain permissions") — without it, the `GITHUB_TOKEN` for both jobs defaults to broader repository permissions than either job (checkout, test, build) actually needs
+
 ### Fixed
 
 - The shipped `docker-compose.yml`/`docker-compose.dev.yml` never set `SESSION_COOKIE_SECURE`, so it defaulted to `true`. Over the plain HTTP these compose files serve by default, the browser silently discarded the `Secure`-flagged login cookie — login/setup looked successful, but every following request was unauthenticated and refreshing the page always dropped back to the login screen. Both compose files now default to `SESSION_COOKIE_SECURE=false`.
