@@ -17,7 +17,7 @@ Thank you for considering contributing to SteamSelfGifter!
 
 ```bash
 cd backend
-python -m venv .venv
+python3.13 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[dev]"
 pytest  # Verify setup
@@ -28,7 +28,7 @@ pytest  # Verify setup
 ```bash
 cd frontend
 npm install
-npm test  # Verify setup
+npm run test:run  # Verify setup
 ```
 
 ## Guidelines
@@ -69,7 +69,7 @@ pytest --cov=src      # With coverage
 
 ```bash
 cd frontend
-npm test              # All tests
+npm run test:run      # All tests
 npm run test:coverage # With coverage
 ```
 

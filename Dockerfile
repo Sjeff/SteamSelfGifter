@@ -42,10 +42,13 @@ RUN pip install --no-cache-dir .
 # -----------------------------------------------------------------------------
 FROM python:3.13-slim
 
-# Install nginx and supervisor
+# Install nginx and supervisor. curl is kept for compatibility with
+# custom healthcheck overrides in external compose/orchestrator configs
+# (Traefik, Swarm, k8s) - the image's own HEALTHCHECK below doesn't need it.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     nginx \
     supervisor \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for backend process
@@ -157,7 +160,7 @@ SUPERVISOR_CONF
 # Expose port 80 (nginx serves both frontend and proxies to backend)
 EXPOSE 80
 
-# Health check (uses the venv's Python instead of installing curl)
+# Health check (uses the venv's Python; curl above is only for external overrides)
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD python3 -c "import sys,urllib.request; sys.exit(0 if urllib.request.urlopen('http://localhost/health', timeout=5).status == 200 else 1)" || exit 1
 

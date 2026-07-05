@@ -13,6 +13,7 @@ import {
   showWarning,
   showInfo,
 } from "@/stores/uiStore";
+import { analyticsKeys } from "@/hooks/useAnalytics";
 import type { WebSocketEvent } from "@/types";
 
 /**
@@ -138,7 +139,7 @@ export function useWebSocketQueryInvalidation() {
 
   // Invalidate dashboard on stats update
   useWebSocketEvent<StatsUpdateData>("stats_update", () => {
-    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    queryClient.invalidateQueries({ queryKey: analyticsKeys.dashboard });
   });
 
   // Invalidate scheduler status on scheduler events
@@ -161,14 +162,14 @@ export function useWebSocketQueryInvalidation() {
   // Invalidate giveaways on scan complete
   useWebSocketEvent("scan_complete", () => {
     queryClient.invalidateQueries({ queryKey: ["giveaways"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    queryClient.invalidateQueries({ queryKey: analyticsKeys.dashboard });
   });
 
   // Invalidate entries on entry events
   useWebSocketEvent("entry_success", () => {
     queryClient.invalidateQueries({ queryKey: ["entries"] });
     queryClient.invalidateQueries({ queryKey: ["giveaways"] });
-    queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+    queryClient.invalidateQueries({ queryKey: analyticsKeys.dashboard });
     queryClient.invalidateQueries({ queryKey: ["analytics"] });
   });
 

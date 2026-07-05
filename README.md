@@ -36,6 +36,7 @@ docker run -d \
   --name steamselfgifter \
   -p 8080:80 \
   -v steamselfgifter-data:/config \
+  -e SESSION_COOKIE_SECURE=false \
   ghcr.io/sjeff/steamselfgifter:latest
 
 # Access the web interface at http://localhost:8080
@@ -53,7 +54,7 @@ docker-compose up -d
 # Access the web interface at http://localhost:8080
 ```
 
-No clone needed — `docker-compose.yml` pulls the pre-built image from `ghcr.io` directly.
+No clone needed — `docker-compose.yml` pulls the pre-built image from `ghcr.io` directly. It already sets `SESSION_COOKIE_SECURE=false`, since it has no TLS termination out of the box — see [Login and TLS](#login-and-tls) if you're putting your own HTTPS reverse proxy in front of it.
 
 ### Development / build from source
 
@@ -97,7 +98,14 @@ npm run dev  # Development server at http://localhost:5173
 
 The first time you open the web interface, you'll be asked to create an admin username and password — this is a one-time setup, after which every visit requires logging in. Sessions last up to 24 hours or until you log out.
 
-If you run SteamSelfGifter over plain HTTP without a TLS reverse proxy in front of it (e.g. LAN-only access), set the `SESSION_COOKIE_SECURE=false` environment variable, otherwise the browser will refuse the login cookie and you won't be able to log in.
+#### Login and TLS
+
+- **Plain HTTP / LAN-only** (the default `docker-compose.yml`): `SESSION_COOKIE_SECURE=false` is already set for you. Without it, the browser silently discards the login cookie — you can log in, but every following request looks unauthenticated and you get bounced back to the login screen on refresh.
+- **Behind your own HTTPS reverse proxy**: set `SESSION_COOKIE_SECURE=true` instead, so the session cookie can't be read over an accidental plain-HTTP connection.
+
+#### Reverse proxy / healthcheck
+
+The image ships a working `HEALTHCHECK` out of the box. If your reverse proxy is health-aware (e.g. Traefik, Docker Swarm, Kubernetes) and only routes to containers Docker reports as healthy, you don't need a custom `healthcheck:` override at all — but if you have one from before the login feature was added, it'll keep working unmodified: both `/health` and `/api/v1/system/health` stay unauthenticated, and `curl` is still available in the image.
 
 Settings are configured **per account** via the Accounts page:
 

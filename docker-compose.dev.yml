@@ -11,6 +11,10 @@ services:
     environment:
       - ENVIRONMENT=production
       - DEBUG=false
+      # This compose file has no TLS termination, so the login cookie must
+      # not require HTTPS. Set to true if you put this behind your own
+      # HTTPS reverse proxy.
+      - SESSION_COOKIE_SECURE=false
     restart: unless-stopped
     healthcheck:
       test:

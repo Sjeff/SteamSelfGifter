@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 All changes were made in collaboration with [Claude](https://claude.ai) (Anthropic).
 
+## [3.1.1]
+
+### Security
+
+- Added an explicit `permissions: contents: read` block to `.github/workflows/test.yml` (CodeQL: "Workflow does not contain permissions") — without it, the `GITHUB_TOKEN` for both jobs defaults to broader repository permissions than either job (checkout, test, build) actually needs
+
+### Fixed
+
+- The shipped `docker-compose.yml`/`docker-compose.dev.yml` never set `SESSION_COOKIE_SECURE`, so it defaulted to `true`. Over the plain HTTP these compose files serve by default, the browser silently discarded the `Secure`-flagged login cookie — login/setup looked successful, but every following request was unauthenticated and refreshing the page always dropped back to the login screen. Both compose files now default to `SESSION_COOKIE_SECURE=false`.
+- `3.1.0`'s login requirement accidentally put `/api/v1/system/health` behind auth and dropped `curl` from the image, breaking any pre-existing custom healthcheck (e.g. for Traefik/Swarm/Kubernetes health-aware routing) that pinged it with `curl`. The container would never report healthy, and a health-aware reverse proxy would silently stop routing to it. `/api/v1/system/health` is unauthenticated again and `curl` is back in the image — no changes needed to existing healthcheck overrides.
+- Added a warning log when a `Secure` session cookie is issued over a plain-HTTP request, so a misconfigured `SESSION_COOKIE_SECURE` is visible in the container logs instead of failing silently.
+- A failed giveaway entry (e.g. a database lock) left the automation cycle's session in an unusable state without rolling back, silently failing every remaining giveaway in that same cycle.
+- The dashboard didn't live-update on scans or entries — a query-key mismatch meant WebSocket-triggered cache invalidation never matched the dashboard's actual query, so it only refreshed via its 30-second poll.
+
 ## [3.1.0]
 
 ### ⚠ Action Required

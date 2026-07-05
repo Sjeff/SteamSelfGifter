@@ -1,5 +1,6 @@
 """Auth API router: one-time admin setup, login/logout, and current user."""
 
+import structlog
 from fastapi import APIRouter, Request, Response
 
 from api.dependencies import SESSION_COOKIE_NAME, AuthServiceDep, CurrentUserDep
@@ -13,10 +14,25 @@ from api.schemas.auth import (
 from api.schemas.common import create_success_response
 from core.config import settings
 
+logger = structlog.get_logger()
+
 router = APIRouter()
 
 
-def _set_session_cookie(response: Response, token: str) -> None:
+def _set_session_cookie(request: Request, response: Response, token: str) -> None:
+    if settings.session_cookie_secure and request.url.scheme != "https":
+        # A Secure cookie is silently dropped by the browser on a plain-HTTP
+        # origin, so the login response looks successful but no session
+        # actually persists. Surface this in the logs instead of leaving
+        # users to debug "logged in, but every request is unauthenticated".
+        logger.warning(
+            "insecure_session_cookie_over_http",
+            message=(
+                "SESSION_COOKIE_SECURE is true but this request came in over "
+                "plain HTTP - the browser will discard the session cookie. "
+                "Set SESSION_COOKIE_SECURE=false if not running behind HTTPS."
+            ),
+        )
     response.set_cookie(
         key=SESSION_COOKIE_NAME,
         value=token,
@@ -37,20 +53,24 @@ async def get_status(auth_service: AuthServiceDep):
 
 
 @router.post("/setup", response_model=dict)
-async def setup(body: SetupRequest, response: Response, auth_service: AuthServiceDep):
+async def setup(
+    body: SetupRequest, request: Request, response: Response, auth_service: AuthServiceDep
+):
     """Create the one admin account. Fails if setup was already completed."""
     user = await auth_service.create_admin(body.username, body.password)
     token = await auth_service.create_session(user.id)
-    _set_session_cookie(response, token)
+    _set_session_cookie(request, response, token)
     return create_success_response(data=UserResponse.model_validate(user))
 
 
 @router.post("/login", response_model=dict)
-async def login(body: LoginRequest, response: Response, auth_service: AuthServiceDep):
+async def login(
+    body: LoginRequest, request: Request, response: Response, auth_service: AuthServiceDep
+):
     """Log in with username and password, setting the session cookie."""
     user = await auth_service.authenticate(body.username, body.password)
     token = await auth_service.create_session(user.id)
-    _set_session_cookie(response, token)
+    _set_session_cookie(request, response, token)
     return create_success_response(data=UserResponse.model_validate(user))
 
 

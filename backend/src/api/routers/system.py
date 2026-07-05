@@ -21,8 +21,14 @@ from services.notification_service import NotificationService
 
 router = APIRouter()
 
+# Health checks come from reverse proxies, orchestrators, and monitoring
+# tools that have no session cookie - keep this one unauthenticated (see
+# main.py, alongside the top-level /health) while everything else in this
+# router (system info, activity logs) stays behind login.
+public_router = APIRouter()
 
-@router.get("/health", response_model=Dict[str, Any])
+
+@public_router.get("/health", response_model=Dict[str, Any])
 async def health_check() -> Dict[str, Any]:
     """
     Health check endpoint.

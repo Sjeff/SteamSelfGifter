@@ -317,6 +317,53 @@ async def test_process_giveaways_entry_error():
         assert results["entered"] == 0
         assert results["failed"] == 1
 
+        # Regression: a failed entry must roll back the session before any
+        # further DB write (log_entry_failure), otherwise a PendingRollbackError
+        # from enter_giveaway would silently kill every remaining giveaway.
+        mock_session.rollback.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_process_entries_rolls_back_session_on_entry_error():
+    """_process_entries (shared by automation_cycle) must also roll back."""
+    from workers.processor import _process_entries
+
+    mock_settings = MagicMock()
+    mock_settings.autojoin_min_price = 50
+    mock_settings.autojoin_min_score = 7
+    mock_settings.autojoin_min_reviews = 100
+    mock_settings.autojoin_max_game_age = None
+    mock_settings.max_entries_per_cycle = 5
+    mock_settings.autojoin_start_at = 0
+    mock_settings.autojoin_stop_at = 0
+    mock_settings.entry_delay_min = 0.01
+    mock_settings.entry_delay_max = 0.02
+
+    mock_giveaway = MagicMock()
+    mock_giveaway.code = "TEST123"
+    mock_giveaway.game = MagicMock()
+    mock_giveaway.game.name = "Test Game"
+
+    mock_giveaway_service = AsyncMock()
+    mock_giveaway_service.get_current_points.return_value = 1000
+    mock_giveaway_service.get_eligible_giveaways.return_value = [mock_giveaway]
+    mock_giveaway_service.enter_giveaway.side_effect = Exception("Entry error")
+
+    mock_session = AsyncMock()
+    mock_notification_service = AsyncMock()
+    mock_notification_service.session = mock_session
+
+    with patch("workers.processor.event_manager") as mock_event_manager, \
+         patch("workers.processor.asyncio.sleep", new_callable=AsyncMock):
+        mock_event_manager.broadcast_event = AsyncMock()
+
+        results = await _process_entries(
+            mock_giveaway_service, mock_notification_service, mock_settings
+        )
+
+        assert results["failed"] == 1
+        mock_session.rollback.assert_awaited_once()
+
 
 @pytest.mark.asyncio
 async def test_enter_single_giveaway_success():
