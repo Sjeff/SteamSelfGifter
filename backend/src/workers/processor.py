@@ -228,6 +228,13 @@ async def process_giveaways(account_id: int = None) -> Dict[str, Any]:
                         )
 
                 except Exception as e:
+                    # A failed flush/commit inside enter_giveaway (IntegrityError,
+                    # "database is locked", etc.) leaves the session in
+                    # PendingRollbackError state - roll back before any further
+                    # writes (log_entry_failure below) or they'll fail too and
+                    # silently kill every remaining giveaway in this cycle.
+                    await session.rollback()
+
                     stats["failed"] += 1
 
                     # Log activity
@@ -441,6 +448,13 @@ async def _process_entries(
                 )
 
         except Exception as e:
+            # A failed flush/commit inside enter_giveaway (IntegrityError,
+            # "database is locked", etc.) leaves the session in
+            # PendingRollbackError state - roll back before any further
+            # writes (log_entry_failure below) or they'll fail too and
+            # silently kill every remaining giveaway in this cycle.
+            await notification_service.session.rollback()
+
             stats["failed"] += 1
 
             # Log activity
