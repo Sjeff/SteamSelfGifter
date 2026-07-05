@@ -69,7 +69,7 @@ pytest --cov=src      # With coverage
 
 ```bash
 cd frontend
-npm test              # All tests
+npm run test:run      # All tests
 npm run test:coverage # With coverage
 ```
 
