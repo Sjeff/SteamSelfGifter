@@ -90,8 +90,21 @@ async def test_requires_session(test_client: AsyncClient):
     me = await test_client.get("/api/v1/auth/me")
     assert me.status_code == 401
 
-    other_router = await test_client.get("/api/v1/system/health")
+    other_router = await test_client.get("/api/v1/accounts")
     assert other_router.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_system_health_does_not_require_session(test_client: AsyncClient):
+    """Reverse proxies/orchestrators health-check without a session cookie.
+
+    Regression test: 3.1.0 accidentally put this behind login alongside the
+    rest of the system router, breaking any pre-existing external healthcheck
+    pointed at it.
+    """
+    response = await test_client.get("/api/v1/system/health")
+    assert response.status_code == 200
+    assert response.json()["data"]["status"] == "healthy"
 
 
 @pytest.mark.asyncio

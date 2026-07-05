@@ -197,6 +197,15 @@ app.include_router(
     tags=["auth"],
 )
 
+# /api/v1/system/health is intentionally unprotected too, for reverse
+# proxies/orchestrators (Traefik, Swarm, k8s) that health-check without a
+# session cookie. The rest of the system router (info, logs) stays protected.
+app.include_router(
+    system.public_router,
+    prefix=f"{settings.api_v1_prefix}/system",
+    tags=["system"],
+)
+
 # Every other router requires a valid session cookie.
 protected = [Depends(get_current_user)]
 

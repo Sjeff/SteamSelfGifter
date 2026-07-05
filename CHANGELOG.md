@@ -6,14 +6,11 @@ All changes were made in collaboration with [Claude](https://claude.ai) (Anthrop
 
 ## [3.1.1]
 
-### ⚠ Action Required
-
-- If your deployment has a custom Docker healthcheck override for health-aware routing (e.g. Traefik, Docker Swarm, Kubernetes) — remove it. The image already ships a correct built-in healthcheck; an old override referencing `curl` (no longer in the image) or `/api/v1/system/health` (now behind login) will leave the container permanently "unhealthy" with no error in the logs, and a health-aware reverse proxy will silently stop routing to it.
-
 ### Fixed
 
 - The shipped `docker-compose.yml`/`docker-compose.dev.yml` never set `SESSION_COOKIE_SECURE`, so it defaulted to `true`. Over the plain HTTP these compose files serve by default, the browser silently discarded the `Secure`-flagged login cookie — login/setup looked successful, but every following request was unauthenticated and refreshing the page always dropped back to the login screen. Both compose files now default to `SESSION_COOKIE_SECURE=false`.
-- Added a warning log when a `Secure` session cookie is issued over a plain-HTTP request, so this misconfiguration is visible in the container logs instead of failing silently.
+- `3.1.0`'s login requirement accidentally put `/api/v1/system/health` behind auth and dropped `curl` from the image, breaking any pre-existing custom healthcheck (e.g. for Traefik/Swarm/Kubernetes health-aware routing) that pinged it with `curl`. The container would never report healthy, and a health-aware reverse proxy would silently stop routing to it. `/api/v1/system/health` is unauthenticated again and `curl` is back in the image — no changes needed to existing healthcheck overrides.
+- Added a warning log when a `Secure` session cookie is issued over a plain-HTTP request, so a misconfigured `SESSION_COOKIE_SECURE` is visible in the container logs instead of failing silently.
 
 ## [3.1.0]
 

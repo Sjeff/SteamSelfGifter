@@ -105,7 +105,7 @@ The first time you open the web interface, you'll be asked to create an admin us
 
 #### Reverse proxy / healthcheck
 
-The image ships a working `HEALTHCHECK` out of the box (an unauthenticated `/health` endpoint, checked with Python — no `curl` required). If your reverse proxy is health-aware (e.g. Traefik, Docker Swarm, Kubernetes) and only routes to containers Docker reports as healthy, **don't add a custom `healthcheck:` override** — it'll shadow the image's own check, and a stale override (e.g. one using `curl`, which isn't in the image, or hitting `/api/v1/system/health`, which now requires login) will leave the container permanently "unhealthy" with the proxy never routing to it at all, with no error in the container logs to explain why.
+The image ships a working `HEALTHCHECK` out of the box. If your reverse proxy is health-aware (e.g. Traefik, Docker Swarm, Kubernetes) and only routes to containers Docker reports as healthy, you don't need a custom `healthcheck:` override at all — but if you have one from before the login feature was added, it'll keep working unmodified: both `/health` and `/api/v1/system/health` stay unauthenticated, and `curl` is still available in the image.
 
 Settings are configured **per account** via the Accounts page:
 
