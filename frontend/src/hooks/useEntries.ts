@@ -88,13 +88,15 @@ export function useEntries(filters: EntryFilters = {}) {
         throw new Error(response.error || "Failed to fetch entries");
       }
 
-      // Transform backend response to frontend format
+      // Transform backend response to frontend format. Normalize at the
+      // boundary so a partial/unexpected API payload (missing entries or
+      // count) never leaves data.items undefined for the page to crash on.
       const page = filters.page || 1;
       const limit = filters.limit || 20;
-      const total = response.data.count;
+      const total = response.data.count ?? 0;
 
       return {
-        items: response.data.entries,
+        items: response.data.entries ?? [],
         total,
         page,
         limit,

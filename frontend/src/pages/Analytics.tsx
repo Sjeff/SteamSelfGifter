@@ -163,19 +163,19 @@ export function Analytics() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <TypeBreakdownItem
                 label="Automatic"
-                value={entryStats.by_type.auto}
+                value={entryStats.by_type?.auto ?? 0}
                 total={entryStats.total}
                 color="blue"
               />
               <TypeBreakdownItem
                 label="Manual"
-                value={entryStats.by_type.manual}
+                value={entryStats.by_type?.manual ?? 0}
                 total={entryStats.total}
                 color="green"
               />
               <TypeBreakdownItem
                 label="Wishlist"
-                value={entryStats.by_type.wishlist}
+                value={entryStats.by_type?.wishlist ?? 0}
                 total={entryStats.total}
                 color="purple"
               />
@@ -285,22 +285,22 @@ export function Analytics() {
                 </span>
                 <Badge
                   variant={
-                    giveawayStats.win_rate >= 1
+                    (giveawayStats.win_rate ?? 0) >= 1
                       ? "success"
-                      : giveawayStats.win_rate >= 0.5
+                      : (giveawayStats.win_rate ?? 0) >= 0.5
                         ? "warning"
                         : "default"
                   }
                   size="md"
                 >
-                  {giveawayStats.win_rate.toFixed(2)}%
+                  {(giveawayStats.win_rate ?? 0).toFixed(2)}%
                 </Badge>
               </div>
               <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4 overflow-hidden">
                 <div
                   className="h-full rounded-full transition-all duration-500 bg-green-500"
                   style={{
-                    width: `${Math.min(giveawayStats.win_rate * 10, 100)}%`,
+                    width: `${Math.min((giveawayStats.win_rate ?? 0) * 10, 100)}%`,
                   }}
                 />
               </div>
