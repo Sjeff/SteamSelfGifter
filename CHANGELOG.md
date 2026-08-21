@@ -15,6 +15,8 @@ All changes were made in collaboration with [Claude](https://claude.ai) (Anthrop
 - A Playwright e2e suite (`npm run test:e2e`) covering the dashboard, accounts, giveaways, navigation, and analytics pages against a mocked API — no backend required to run it.
 - The published Docker image now has a `nightly` tag (rebuilt daily, and on every `master` push) so it keeps picking up base-image security patches even between releases; `latest` now only ever points at the last tagged release, never an arbitrary `master` build.
 
+- The SteamGifts connection status ("Connected as X" / invalid / not configured) moved from a Dashboard-only banner into a persistent header icon, visible on every page and scoped to the currently selected account. The Dashboard keeps its actionable banners for the not-configured and invalid-session cases (with a link to the Accounts page), since those need a call to action; the "all good" case is now just the header icon.
+
 ### Changed
 
 - The Docker build now removes the backend package from its own virtualenv after installing dependencies, so `/app/src` is the single copy of the code running in the container (the installed copy in site-packages was dead weight that could shadow-fight with it).

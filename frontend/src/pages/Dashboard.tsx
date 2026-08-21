@@ -13,7 +13,6 @@ import {
   RotateCw,
   AlertTriangle,
   Settings,
-  CheckCircle,
   Shield,
   ShieldAlert,
   ShieldQuestion,
@@ -764,10 +763,10 @@ function SessionStatusBanner({ session }: SessionStatusBannerProps) {
             <p className="text-sm text-red-700 dark:text-red-300 mt-1">
               {session.error ||
                 "Your SteamGifts session has expired or become invalid."}{" "}
-              Please update your PHPSESSID cookie in Settings.
+              Please update your PHPSESSID cookie on the Accounts page.
             </p>
             <a
-              href="/settings"
+              href="/accounts"
               className="inline-flex items-center gap-2 mt-3 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
             >
               <Settings size={16} />
@@ -779,18 +778,6 @@ function SessionStatusBanner({ session }: SessionStatusBannerProps) {
     );
   }
 
-  // Session valid - show connected status (compact)
-  return (
-    <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-3">
-      <div className="flex items-center gap-2">
-        <CheckCircle className="text-green-500 shrink-0" size={18} />
-        <span className="text-sm text-green-700 dark:text-green-300">
-          Connected to SteamGifts
-          {session.username && (
-            <span className="font-medium"> as {session.username}</span>
-          )}
-        </span>
-      </div>
-    </div>
-  );
+  // Session valid: no banner -- the header shows the connected indicator.
+  return null;
 }

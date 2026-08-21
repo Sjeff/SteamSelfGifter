@@ -57,6 +57,7 @@ export { useEntries, entryKeys, type EntryFilters } from "./useEntries";
 // Analytics hooks
 export {
   useDashboard,
+  useSessionStatus,
   useEntryStats,
   useGiveawayStats,
   useGameStats,

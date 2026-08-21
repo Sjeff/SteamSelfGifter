@@ -15,6 +15,11 @@ test.describe("Dashboard", () => {
     await expect(page.getByText("Active Giveaways")).toBeVisible();
     await expect(page.getByText("57", { exact: true })).toBeVisible();
     await expect(page.getByText("Win Rate (30d)")).toBeVisible();
+
+    // Header shows the connected SteamGifts session indicator
+    await expect(
+      page.getByLabel("Connected to SteamGifts as e2e-user"),
+    ).toBeVisible();
   });
 
   test("root path redirects to the dashboard", async ({ page }) => {
