@@ -316,6 +316,7 @@ class GiveawayService:
             end_time=ga_data.get("end_time"),
             game_id=ga_data.get("game_id"),
             is_wishlist=ga_data.get("is_wishlist", False),
+            is_dlc=ga_data.get("is_dlc", False),
             is_entered=ga_data.get("is_entered", False),
         )
         return giveaway
@@ -335,9 +336,11 @@ class GiveawayService:
         if ga_data.get("game_id") and not giveaway.game_id:
             giveaway.game_id = ga_data["game_id"]
 
-        # Update wishlist flag (can change from False to True, but not back)
+        # Update wishlist/DLC flags (can change from False to True, but not back)
         if ga_data.get("is_wishlist"):
             giveaway.is_wishlist = True
+        if ga_data.get("is_dlc"):
+            giveaway.is_dlc = True
 
     async def enter_giveaway(
         self, giveaway_code: str, entry_type: str = "manual"
@@ -426,6 +429,7 @@ class GiveawayService:
         max_game_age: int | None = None,
         limit: int = 50,
         wishlist_priority: bool = False,
+        dlc_priority: bool = False,
     ) -> list[Giveaway]:
         """
         Get eligible giveaways based on criteria.
@@ -446,13 +450,15 @@ class GiveawayService:
             limit: Maximum results to return
             wishlist_priority: If True, wishlist giveaways are fetched first,
                 bypassing the price/game-quality filters above (they still
-                have to be active, not hidden, not entered), and the
-                remaining slots up to `limit` are filled with the regular
-                filtered pool.
+                have to be active, not hidden, not entered).
+            dlc_priority: If True, DLC giveaways are fetched next (after
+                wishlist giveaways, before the regular pool), also bypassing
+                the price/game-quality filters above. Remaining slots up to
+                `limit` are filled with the regular filtered pool.
 
         Returns:
-            List of eligible giveaways. When wishlist_priority is set,
-            wishlist giveaways come first.
+            List of eligible giveaways. When wishlist_priority/dlc_priority
+            are set, wishlist giveaways come first, then DLC giveaways.
 
         Example:
             >>> eligible = await service.get_eligible_giveaways(
@@ -463,11 +469,24 @@ class GiveawayService:
             ...     limit=10
             ... )
         """
-        if wishlist_priority:
-            wishlist_giveaways = await self.giveaway_repo.get_eligible_wishlist(
-                limit=limit,
-            )
-            remaining = max(limit - len(wishlist_giveaways), 0)
+        if wishlist_priority or dlc_priority:
+            priority_giveaways: list[Giveaway] = []
+
+            if wishlist_priority:
+                remaining = max(limit - len(priority_giveaways), 0)
+                if remaining:
+                    priority_giveaways += await self.giveaway_repo.get_eligible_wishlist(
+                        limit=remaining,
+                    )
+
+            if dlc_priority:
+                remaining = max(limit - len(priority_giveaways), 0)
+                if remaining:
+                    priority_giveaways += await self.giveaway_repo.get_eligible_dlc(
+                        limit=remaining,
+                    )
+
+            remaining = max(limit - len(priority_giveaways), 0)
             regular_giveaways = (
                 await self.giveaway_repo.get_eligible(
                     min_price=min_price,
@@ -476,12 +495,13 @@ class GiveawayService:
                     min_reviews=min_reviews,
                     max_game_age=max_game_age,
                     limit=remaining,
-                    exclude_wishlist=True,
+                    exclude_wishlist=wishlist_priority,
+                    exclude_dlc=dlc_priority,
                 )
                 if remaining
                 else []
             )
-            return wishlist_giveaways + regular_giveaways
+            return priority_giveaways + regular_giveaways
 
         giveaways = await self.giveaway_repo.get_eligible(
             min_price=min_price,

@@ -540,8 +540,9 @@ class SteamGiftsClient:
 
                 giveaway = self._parse_giveaway_element(element)
                 if giveaway:
-                    # Mark wishlist giveaways
+                    # Mark wishlist/DLC giveaways
                     giveaway["is_wishlist"] = giveaway_type == "wishlist"
+                    giveaway["is_dlc"] = dlc_only
                     giveaways.append(giveaway)
             except Exception as e:
                 # Log error but continue parsing other giveaways

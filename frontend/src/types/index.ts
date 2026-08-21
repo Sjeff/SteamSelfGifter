@@ -20,6 +20,7 @@ export interface Giveaway {
   is_hidden: boolean;
   is_entered: boolean;
   is_wishlist: boolean;
+  is_dlc: boolean;
   is_won: boolean;
   won_at: string | null;
   is_safe: boolean | null;

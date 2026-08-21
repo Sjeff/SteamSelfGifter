@@ -381,6 +381,7 @@ async def test_process_entries_skips_giveaway_that_would_bust_budget():
     mock_settings.autojoin_start_at = 0
     mock_settings.autojoin_stop_at = 100
     mock_settings.wishlist_priority = False
+    mock_settings.dlc_enabled = False
     mock_settings.entry_delay_min = 0.01
     mock_settings.entry_delay_max = 0.02
 
@@ -389,12 +390,14 @@ async def test_process_entries_skips_giveaway_that_would_bust_budget():
     expensive.code = "EXPENSIVE"
     expensive.price = 150
     expensive.is_wishlist = False
+    expensive.is_dlc = False
     expensive.game_name = "Expensive Game"
 
     cheap = MagicMock()
     cheap.code = "CHEAP"
     cheap.price = 30
     cheap.is_wishlist = False
+    cheap.is_dlc = False
     cheap.game_name = "Cheap Game"
 
     mock_entry = MagicMock()
@@ -439,6 +442,7 @@ async def test_process_entries_uses_wishlist_entry_type():
     mock_settings.autojoin_start_at = 0
     mock_settings.autojoin_stop_at = 0
     mock_settings.wishlist_priority = True
+    mock_settings.dlc_enabled = False
     mock_settings.entry_delay_min = 0.01
     mock_settings.entry_delay_max = 0.02
 
@@ -446,6 +450,7 @@ async def test_process_entries_uses_wishlist_entry_type():
     wishlist_giveaway.code = "WISH"
     wishlist_giveaway.price = 10
     wishlist_giveaway.is_wishlist = True
+    wishlist_giveaway.is_dlc = False
     wishlist_giveaway.game_name = "Wishlist Game"
 
     mock_entry = MagicMock()
@@ -474,9 +479,68 @@ async def test_process_entries_uses_wishlist_entry_type():
             max_game_age=None,
             limit=5,
             wishlist_priority=True,
+            dlc_priority=False,
         )
         mock_giveaway_service.enter_giveaway.assert_called_once_with(
             "WISH", entry_type="wishlist"
+        )
+
+
+@pytest.mark.asyncio
+async def test_process_entries_uses_dlc_entry_type():
+    """DLC giveaways are recorded with entry_type='dlc'."""
+    from workers.processor import _process_entries
+
+    mock_settings = MagicMock()
+    mock_settings.autojoin_min_price = 0
+    mock_settings.autojoin_min_score = None
+    mock_settings.autojoin_min_reviews = None
+    mock_settings.autojoin_max_game_age = None
+    mock_settings.max_entries_per_cycle = 5
+    mock_settings.autojoin_start_at = 0
+    mock_settings.autojoin_stop_at = 0
+    mock_settings.wishlist_priority = False
+    mock_settings.dlc_enabled = True
+    mock_settings.entry_delay_min = 0.01
+    mock_settings.entry_delay_max = 0.02
+
+    dlc_giveaway = MagicMock()
+    dlc_giveaway.code = "DLC1"
+    dlc_giveaway.price = 10
+    dlc_giveaway.is_wishlist = False
+    dlc_giveaway.is_dlc = True
+    dlc_giveaway.game_name = "Some DLC"
+
+    mock_entry = MagicMock()
+    mock_entry.points_spent = 10
+
+    mock_giveaway_service = AsyncMock()
+    mock_giveaway_service.get_current_points.return_value = 200
+    mock_giveaway_service.get_eligible_giveaways.return_value = [dlc_giveaway]
+    mock_giveaway_service.enter_giveaway.return_value = mock_entry
+
+    mock_notification_service = AsyncMock()
+
+    with patch("workers.processor.event_manager") as mock_event_manager, \
+         patch("workers.processor.asyncio.sleep", new_callable=AsyncMock):
+        mock_event_manager.broadcast_event = AsyncMock()
+
+        await _process_entries(
+            mock_giveaway_service, mock_notification_service, mock_settings
+        )
+
+        mock_giveaway_service.get_eligible_giveaways.assert_called_once_with(
+            min_price=0,
+            max_price=None,
+            min_score=None,
+            min_reviews=None,
+            max_game_age=None,
+            limit=5,
+            wishlist_priority=False,
+            dlc_priority=True,
+        )
+        mock_giveaway_service.enter_giveaway.assert_called_once_with(
+            "DLC1", entry_type="dlc"
         )
 
 

@@ -1,7 +1,8 @@
 """SteamGifts giveaway data model."""
 
-from datetime import datetime, timezone
-from sqlalchemy import String, Integer, Boolean, DateTime, ForeignKey
+from datetime import UTC, datetime
+
+from sqlalchemy import Boolean, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.base import Base, TimestampMixin, TZDateTime
@@ -32,6 +33,8 @@ class Giveaway(Base, TimestampMixin):
         Status Flags:
             is_hidden: User manually hid this giveaway
             is_entered: Whether we've entered this giveaway
+            is_wishlist: Game is on user's Steam wishlist
+            is_dlc: Giveaway is for DLC content, not a base game
 
         Safety Analysis:
             is_safe: Scam detection result (True/False/None)
@@ -142,6 +145,11 @@ class Giveaway(Base, TimestampMixin):
         default=False,
         comment="Game is on user's Steam wishlist",
     )
+    is_dlc: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
+        comment="Giveaway is for DLC content, not a base game",
+    )
     is_won: Mapped[bool] = mapped_column(
         Boolean,
         default=False,
@@ -169,7 +177,7 @@ class Giveaway(Base, TimestampMixin):
     discovered_at: Mapped[datetime] = mapped_column(
         TZDateTime,
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         comment="When we first discovered this",
     )
     entered_at: Mapped[datetime | None] = mapped_column(
@@ -196,7 +204,7 @@ class Giveaway(Base, TimestampMixin):
         """
         if not self.end_time:
             return True  # Unknown end time, assume active
-        return datetime.now(timezone.utc) < self.end_time
+        return datetime.now(UTC) < self.end_time
 
     @property
     def is_expired(self) -> bool:
@@ -225,4 +233,4 @@ class Giveaway(Base, TimestampMixin):
             return None
         if self.is_expired:
             return 0
-        return int((self.end_time - datetime.now(timezone.utc)).total_seconds())
+        return int((self.end_time - datetime.now(UTC)).total_seconds())

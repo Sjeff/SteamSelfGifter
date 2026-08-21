@@ -13,6 +13,7 @@ import {
   Star,
   Shield,
   ShieldAlert,
+  Package,
   EyeOff as HideIcon,
   MessageSquare,
 } from "lucide-react";
@@ -236,6 +237,13 @@ export function Giveaways() {
           >
             <Heart size={12} className="mr-1 fill-current text-pink-500" />
             Wishlist
+          </FilterButton>
+          <FilterButton
+            active={filters.status === "dlc"}
+            onClick={() => handleStatusFilter("dlc")}
+          >
+            <Package size={12} className="mr-1 text-blue-500" />
+            DLC
           </FilterButton>
           <FilterButton
             active={filters.status === "entered"}

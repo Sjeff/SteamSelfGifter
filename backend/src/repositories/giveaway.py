@@ -193,6 +193,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         max_game_age: int | None = None,
         limit: int | None = None,
         exclude_wishlist: bool = False,
+        exclude_dlc: bool = False,
     ) -> list[Giveaway]:
         """
         Get eligible giveaways based on autojoin criteria.
@@ -214,6 +215,9 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             exclude_wishlist: If True, exclude wishlist giveaways (used when
                 wishlist giveaways are fetched separately via
                 get_eligible_wishlist(), to avoid duplicates)
+            exclude_dlc: If True, exclude DLC giveaways (used when DLC
+                giveaways are fetched separately via get_eligible_dlc(),
+                to avoid duplicates)
 
         Returns:
             List of eligible giveaways, ordered by price (highest first)
@@ -249,6 +253,9 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
         if exclude_wishlist:
             conditions.append(self.model.is_wishlist == False)  # noqa: E712
+
+        if exclude_dlc:
+            conditions.append(self.model.is_dlc == False)  # noqa: E712
 
         # Determine if we need to JOIN with Game table
         needs_game_join = (
@@ -323,6 +330,49 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             self.model.is_hidden == False,  # noqa: E712
             self.model.is_entered == False,  # noqa: E712
             self.model.is_wishlist == True,  # noqa: E712
+        ]
+
+        f = self._account_filter()
+        if f is not None:
+            conditions.append(f)
+
+        query = (
+            select(self.model)
+            .where(and_(*conditions))
+            .order_by(self.model.price.desc())
+        )
+
+        if limit:
+            query = query.limit(limit)
+
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_eligible_dlc(self, limit: int | None = None) -> list[Giveaway]:
+        """
+        Get DLC giveaways eligible for autojoin, bypassing the usual
+        price/game-quality filters (min_price, min_score, min_reviews,
+        max_game_age) that apply to the regular autojoin pool.
+
+        Still respects: active, not hidden, not already entered.
+
+        Args:
+            limit: Maximum number to return
+
+        Returns:
+            List of eligible DLC giveaways, ordered by price (highest first)
+
+        Example:
+            >>> dlc_eligible = await repo.get_eligible_dlc(limit=10)
+        """
+        now = datetime.now(UTC)
+
+        conditions = [
+            self.model.end_time.isnot(None),
+            self.model.end_time > now,
+            self.model.is_hidden == False,  # noqa: E712
+            self.model.is_entered == False,  # noqa: E712
+            self.model.is_dlc == True,  # noqa: E712
         ]
 
         f = self._account_filter()
@@ -432,6 +482,45 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         now = datetime.now(UTC)
         conditions = [
             self.model.is_wishlist == True,  # noqa: E712
+            self.model.is_hidden == False,  # noqa: E712
+            (self.model.end_time == None) | (self.model.end_time > now),  # noqa: E711
+        ]
+        f = self._account_filter()
+        if f is not None:
+            conditions.append(f)
+        query = (
+            select(self.model)
+            .where(and_(*conditions))
+            .order_by(self.model.end_time.asc())
+        )
+
+        if offset:
+            query = query.offset(offset)
+        if limit:
+            query = query.limit(limit)
+
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_dlc(
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[Giveaway]:
+        """
+        Get active DLC giveaways.
+
+        Args:
+            limit: Maximum number to return
+            offset: Number of records to skip
+
+        Returns:
+            List of DLC giveaways that are still active (not expired)
+
+        Example:
+            >>> dlc = await repo.get_dlc(limit=20)
+        """
+        now = datetime.now(UTC)
+        conditions = [
+            self.model.is_dlc == True,  # noqa: E712
             self.model.is_hidden == False,  # noqa: E712
             (self.model.end_time == None) | (self.model.end_time > now),  # noqa: E711
         ]

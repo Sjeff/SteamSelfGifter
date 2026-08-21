@@ -9,6 +9,7 @@ All changes were made in collaboration with [Claude](https://claude.ai) (Anthrop
 ### Added
 
 - New "Prioritize Wishlist" setting (on by default): wishlist giveaways are now entered before the general autojoin pool and bypass the price/review-score/review-count/game-age filters (they still respect active/hidden/entered status and the points budget below).
+- DLC-priority autojoin: giveaways are now tagged as DLC when discovered, get their own "DLC" tab (and `GET /api/v1/giveaways/dlc` endpoint) on the Giveaways page, and — like wishlist giveaways — bypass the price/review-score/review-count/game-age filters when "Include DLC" is enabled in Settings. Entries made this way are recorded as `entry_type="dlc"`.
 
 ### Fixed
 

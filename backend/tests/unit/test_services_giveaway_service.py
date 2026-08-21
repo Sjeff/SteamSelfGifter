@@ -386,6 +386,52 @@ async def test_get_eligible_giveaways_wishlist_priority(
 
 
 @pytest.mark.asyncio
+async def test_get_eligible_giveaways_wishlist_and_dlc_priority(
+    test_db, mock_sg_client, mock_game_service
+):
+    """Wishlist first, then DLC, then the regular filtered pool."""
+    async with test_db() as session:
+        service = GiveawayService(session, mock_sg_client, mock_game_service)
+
+        future_time = datetime.now(UTC) + timedelta(hours=24)
+
+        await service.giveaway_repo.create(
+            code="WISH",
+            url="https://www.steamgifts.com/giveaway/WISH/",
+            game_name="Wishlist Game",
+            price=10,
+            end_time=future_time,
+            is_wishlist=True,
+        )
+        await service.giveaway_repo.create(
+            code="DLC1",
+            url="https://www.steamgifts.com/giveaway/DLC1/",
+            game_name="Some DLC",
+            price=10,
+            end_time=future_time,
+            is_dlc=True,
+        )
+        await service.giveaway_repo.create(
+            code="REGULAR",
+            url="https://www.steamgifts.com/giveaway/REGULAR/",
+            game_name="Regular Game",
+            price=100,
+            end_time=future_time,
+        )
+
+        await session.commit()
+
+        eligible = await service.get_eligible_giveaways(
+            min_price=50,
+            limit=10,
+            wishlist_priority=True,
+            dlc_priority=True,
+        )
+
+        assert [ga.code for ga in eligible] == ["WISH", "DLC1", "REGULAR"]
+
+
+@pytest.mark.asyncio
 async def test_get_active_giveaways(test_db, mock_sg_client, mock_game_service):
     """Test getting active giveaways."""
     async with test_db() as session:

@@ -1,23 +1,25 @@
 """Unit tests for giveaways API router."""
 
+from datetime import UTC, datetime
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
-from unittest.mock import MagicMock, AsyncMock
-from datetime import datetime, UTC
 from fastapi import HTTPException
 
 from api.routers.giveaways import (
-    list_giveaways,
-    get_active_giveaways,
-    get_expiring_giveaways,
-    get_eligible_giveaways,
-    get_giveaway_stats,
-    get_giveaway,
-    sync_giveaways,
     enter_giveaway,
+    get_active_giveaways,
+    get_dlc_giveaways,
+    get_eligible_giveaways,
+    get_expiring_giveaways,
+    get_giveaway,
+    get_giveaway_stats,
     hide_giveaway,
+    list_giveaways,
     search_giveaways,
+    sync_giveaways,
 )
-from api.schemas.giveaway import GiveawayScanRequest, GiveawayEntryRequest
+from api.schemas.giveaway import GiveawayEntryRequest, GiveawayScanRequest
 
 
 def create_mock_giveaway(
@@ -54,6 +56,7 @@ def create_mock_giveaway(
     mock.entered_at = entered_at
     # Additional fields required by GiveawayResponse - explicitly set to None
     mock.is_wishlist = False
+    mock.is_dlc = False
     mock.is_won = False
     mock.won_at = None
     mock.game_thumbnail = None
@@ -155,6 +158,26 @@ async def test_get_active_giveaways():
 
     assert result["success"] is True
     assert result["data"]["count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_get_dlc_giveaways():
+    """Test GET /giveaways/dlc endpoint."""
+    mock_service = AsyncMock()
+    mock_giveaway = create_mock_giveaway()
+    mock_giveaway.is_dlc = True
+    mock_service.giveaway_repo.get_dlc.return_value = [mock_giveaway]
+    mock_service.enrich_giveaways_with_game_data.return_value = [mock_giveaway]
+
+    result = await get_dlc_giveaways(
+        giveaway_service=mock_service,
+        limit=50,
+        offset=0,
+    )
+
+    assert result["success"] is True
+    assert result["data"]["count"] == 1
+    assert result["data"]["giveaways"][0]["is_dlc"] is True
 
 
 @pytest.mark.asyncio

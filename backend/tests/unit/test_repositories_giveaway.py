@@ -388,6 +388,82 @@ async def test_get_eligible_wishlist_bypasses_price_filter(test_db):
 
 
 @pytest.mark.asyncio
+async def test_get_eligible_dlc_bypasses_price_filter(test_db):
+    """get_eligible_dlc() only respects active/hidden/entered, not price."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        # Would fail a min_price=50 filter, but DLC bypasses it
+        await repo.create(
+            code="CHEAP_DLC",
+            game_name="Some DLC",
+            price=5,
+            url="http://test.com/1",
+            end_time=now + timedelta(hours=24),
+            is_dlc=True,
+        )
+        # Not a DLC giveaway -> excluded regardless of price
+        await repo.create(
+            code="REGULAR",
+            game_name="Regular Game",
+            price=100,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+            is_dlc=False,
+        )
+        # Hidden DLC giveaways are still excluded
+        await repo.create(
+            code="HIDDEN_DLC",
+            game_name="Hidden DLC",
+            price=5,
+            url="http://test.com/3",
+            end_time=now + timedelta(hours=24),
+            is_dlc=True,
+            is_hidden=True,
+        )
+
+        await session.commit()
+
+        eligible = await repo.get_eligible_dlc()
+
+        assert len(eligible) == 1
+        assert eligible[0].code == "CHEAP_DLC"
+
+
+@pytest.mark.asyncio
+async def test_get_eligible_exclude_dlc(test_db):
+    """Test get_eligible(exclude_dlc=True) drops DLC giveaways."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        await repo.create(
+            code="DLC1",
+            game_name="Some DLC",
+            price=50,
+            url="http://test.com/1",
+            end_time=now + timedelta(hours=24),
+            is_dlc=True,
+        )
+        await repo.create(
+            code="REGULAR",
+            game_name="Regular Game",
+            price=50,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+            is_dlc=False,
+        )
+
+        await session.commit()
+
+        eligible = await repo.get_eligible(min_price=10, exclude_dlc=True)
+
+        assert len(eligible) == 1
+        assert eligible[0].code == "REGULAR"
+
+
+@pytest.mark.asyncio
 async def test_get_by_game(test_db):
     """Test getting giveaways by game ID."""
     async with test_db() as session:

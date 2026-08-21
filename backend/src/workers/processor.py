@@ -134,6 +134,7 @@ async def process_giveaways(account_id: int = None) -> dict[str, Any]:
                 max_game_age=settings.autojoin_max_game_age,
                 limit=max_entries,
                 wishlist_priority=settings.wishlist_priority,
+                dlc_priority=settings.dlc_enabled,
             )
 
             stats = {
@@ -181,7 +182,11 @@ async def process_giveaways(account_id: int = None) -> dict[str, Any]:
                     logger.debug("entry_delay", delay=delay)
                     await asyncio.sleep(delay)
 
-                entry_type = "wishlist" if giveaway.is_wishlist else "auto"
+                entry_type = (
+                    "dlc" if giveaway.is_dlc
+                    else "wishlist" if giveaway.is_wishlist
+                    else "auto"
+                )
 
                 try:
                     entry = await giveaway_service.enter_giveaway(
@@ -359,6 +364,7 @@ async def _process_entries(
         max_game_age=settings.autojoin_max_game_age,
         limit=max_entries,
         wishlist_priority=settings.wishlist_priority,
+        dlc_priority=settings.dlc_enabled,
     )
 
     stats = {
@@ -405,7 +411,11 @@ async def _process_entries(
             logger.debug("entry_delay", delay=delay)
             await asyncio.sleep(delay)
 
-        entry_type = "wishlist" if giveaway.is_wishlist else "auto"
+        entry_type = (
+            "dlc" if giveaway.is_dlc
+            else "wishlist" if giveaway.is_wishlist
+            else "auto"
+        )
 
         try:
             entry = await giveaway_service.enter_giveaway(
