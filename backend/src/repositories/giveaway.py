@@ -8,7 +8,7 @@ giveaway visibility.
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from sqlalchemy import and_, or_, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.game import Game
@@ -931,6 +931,38 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         )
         result = await self.session.execute(query)
         return result.scalar() or 0
+
+    async def get_daily_wins(self, since: datetime) -> list[dict]:
+        """
+        Per-day win counts since ``since`` (for trend charts).
+
+        Args:
+            since: Start date to aggregate from
+
+        Returns:
+            One dict per day that has wins, ascending:
+            ``{"date": "YYYY-MM-DD", "wins": n}``.
+
+        Example:
+            >>> week_ago = datetime.now(timezone.utc) - timedelta(days=7)
+            >>> daily = await repo.get_daily_wins(week_ago)
+        """
+        day = func.date(self.model.won_at)
+        base = (
+            select(day.label("day"), func.count().label("wins"))
+            .where(
+                and_(
+                    self.model.is_won == True,  # noqa: E712
+                    self.model.won_at.isnot(None),
+                    self.model.won_at >= since,
+                )
+            )
+            .group_by(day)
+            .order_by(day)
+        )
+        query = self._apply_account_filter(base)
+        result = await self.session.execute(query)
+        return [{"date": row.day, "wins": row.wins} for row in result.all()]
 
     async def get_stats_since(self, since: datetime) -> dict:
         """

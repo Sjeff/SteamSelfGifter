@@ -1,13 +1,11 @@
 """Unit tests for EntryRepository."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from models.base import Base
-from models.game import Game  # Import for foreign key
-from models.giveaway import Giveaway  # Import for foreign key
-from models.entry import Entry
 from repositories.entry import EntryRepository
 
 
@@ -75,6 +73,43 @@ async def test_get_by_giveaway_not_found(test_db):
         result = await repo.get_by_giveaway(999)
 
         assert result is None
+
+
+@pytest.mark.asyncio
+async def test_get_daily_stats(test_db, sample_giveaway):
+    """get_daily_stats groups by day, counts statuses, sums success points."""
+    async with test_db() as session:
+        repo = EntryRepository(session)
+
+        await repo.create(
+            giveaway_id=sample_giveaway, points_spent=50, entry_type="auto", status="success"
+        )
+        await repo.create(
+            giveaway_id=sample_giveaway, points_spent=30, entry_type="auto", status="success"
+        )
+        failed = await repo.create(
+            giveaway_id=sample_giveaway, points_spent=0, entry_type="auto", status="failed"
+        )
+        old = await repo.create(
+            giveaway_id=sample_giveaway, points_spent=99, entry_type="auto", status="success"
+        )
+        old.created_at = datetime.now(UTC) - timedelta(days=3)
+        await session.commit()
+
+        rows = await repo.get_daily_stats(since=datetime.now(UTC) - timedelta(days=7))
+
+        assert len(rows) == 2  # today + three days ago
+        today = rows[-1]
+        assert today["entries"] == 3
+        assert today["successful"] == 2
+        assert today["failed"] == 1
+        assert today["points_spent"] == 80  # success points only
+        assert rows[0]["points_spent"] == 99
+        assert failed.status == "failed"
+
+        # Window excludes the old day
+        rows = await repo.get_daily_stats(since=datetime.now(UTC) - timedelta(days=1))
+        assert len(rows) == 1
 
 
 @pytest.mark.asyncio
@@ -275,7 +310,7 @@ async def test_get_in_date_range(test_db, sample_giveaway):
     """Test getting entries within date range."""
     async with test_db() as session:
         repo = EntryRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create entry 2 days ago
         old_entry = await repo.create(
@@ -636,7 +671,7 @@ async def test_get_entries_since(test_db, sample_giveaway):
     """Test getting entries since a specific time."""
     async with test_db() as session:
         repo = EntryRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create old entry
         old_entry = await repo.create(

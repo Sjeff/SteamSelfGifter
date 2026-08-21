@@ -8,15 +8,27 @@ import {
   CheckCircle,
   XCircle,
   Zap,
+  LineChart,
   type LucideIcon,
 } from "lucide-react";
 import { Card, Badge, CardSkeleton } from "@/components/common";
 import {
   useEntryStats,
+  useEntryTrends,
   useGiveawayStats,
   useGameStats,
   type TimeRangeFilter,
 } from "@/hooks";
+import { TrendCharts } from "@/components/analytics/TrendCharts";
+
+/** The trends endpoint covers week/month/year; map the page periods onto it. */
+const TREND_PERIODS = {
+  day: "week",
+  week: "week",
+  month: "month",
+  year: "year",
+  all: "year",
+} as const;
 
 /**
  * Analytics page
@@ -42,6 +54,9 @@ export function Analytics() {
     isLoading: gamesLoading,
     error: gamesError,
   } = useGameStats();
+  const { data: trends, isLoading: trendsLoading } = useEntryTrends(
+    TREND_PERIODS[timeRange.period ?? "month"],
+  );
 
   const isLoading = entriesLoading || giveawaysLoading || gamesLoading;
   const hasError = entriesError || giveawaysError || gamesError;
@@ -107,6 +122,15 @@ export function Analytics() {
           </PeriodButton>
         </div>
       </div>
+
+      {/* Trends */}
+      <section>
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+          <LineChart size={20} />
+          Trends
+        </h2>
+        <TrendCharts trends={trends} isLoading={trendsLoading} />
+      </section>
 
       {/* Entry Statistics */}
       <section>

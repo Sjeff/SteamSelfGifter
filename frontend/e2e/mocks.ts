@@ -1,5 +1,21 @@
 import type { Page, Route } from "@playwright/test";
 
+function mockTrends(days: number) {
+  return Array.from({ length: days }, (_, i) => {
+    const date = new Date(NOW - (days - 1 - i) * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
+    return {
+      date,
+      entries: 5 + i,
+      successful: 4 + i,
+      failed: 1,
+      points_spent: (4 + i) * 25,
+      wins: i === days - 1 ? 1 : 0,
+    };
+  });
+}
+
 /** Envelope every backend response uses. */
 function ok(data: unknown) {
   return {
@@ -342,7 +358,9 @@ export async function mockApi(page: Page): Promise<ApiCall[]> {
       );
     }
     if (path.startsWith("/api/v1/analytics/entries/trends")) {
-      return route.fulfill(ok({ period: "week", trends: [] }));
+      const period = url.searchParams.get("period") ?? "month";
+      const days = { week: 7, month: 30, year: 365 }[period] ?? 30;
+      return route.fulfill(ok({ period, trends: mockTrends(days) }));
     }
 
     // --- System logs (Logs page) ---

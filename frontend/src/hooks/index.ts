@@ -60,8 +60,10 @@ export {
   useEntryStats,
   useGiveawayStats,
   useGameStats,
+  useEntryTrends,
   analyticsKeys,
   type TimeRangeFilter,
+  type TrendDataPoint,
 } from "./useAnalytics";
 
 // Log hooks
