@@ -13,6 +13,7 @@ All changes were made in collaboration with [Claude](https://claude.ai) (Anthrop
 - Chance-to-win and time-remaining browse filters on the Active/Wishlist/DLC giveaway tabs ("Min Chance" and "Ending in" sliders), plus a win-chance badge and entry count on every giveaway card. Giveaways page filters (tab, score, safety, chance, time) now persist across visits via `localStorage`.
 - Analytics page now leads with per-day trend charts (entries succeeded/failed, points spent, wins), backed by a new `GET /analytics/entries/trends` endpoint. Chart colors are CVD-validated CSS custom properties matched to the light/dark app surfaces; the data is also available as a collapsible table.
 - A Playwright e2e suite (`npm run test:e2e`) covering the dashboard, accounts, giveaways, navigation, and analytics pages against a mocked API — no backend required to run it.
+- The published Docker image now has a `nightly` tag (rebuilt daily, and on every `master` push) so it keeps picking up base-image security patches even between releases; `latest` now only ever points at the last tagged release, never an arbitrary `master` build.
 
 ### Fixed
 
