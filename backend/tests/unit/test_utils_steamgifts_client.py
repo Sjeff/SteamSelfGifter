@@ -1,17 +1,20 @@
 """Unit tests for SteamGiftsClient."""
 
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
-import httpx
 
+import httpx
+import pytest
+
+from core.exceptions import (
+    SteamGiftsError,
+)
+from core.exceptions import (
+    SteamGiftsSessionExpiredError as SteamGiftsAuthError,
+)
 from utils.steamgifts_client import (
     SteamGiftsClient,
     SteamGiftsNotFoundError,
-)
-from core.exceptions import (
-    SteamGiftsError,
-    SteamGiftsSessionExpiredError as SteamGiftsAuthError,
 )
 
 
@@ -23,6 +26,8 @@ def steamgifts_client():
         user_agent="TestBot/1.0",
         xsrf_token="test_xsrf_token",
         timeout_seconds=30,
+        min_request_interval_seconds=0,
+        retry_backoff_seconds=0,
     )
     return client
 
@@ -78,6 +83,107 @@ async def test_steamgifts_client_context_manager(steamgifts_client):
 
     # Client should be closed after context
     assert steamgifts_client._client is None
+
+
+class TestRequestRateLimitingAndRetry:
+    """Tests for the _request() rate-limiting and retry/backoff wrapper."""
+
+    @pytest.mark.asyncio
+    async def test_retries_on_retryable_status_then_succeeds(
+        self, steamgifts_client
+    ):
+        """A 503 followed by a 200 should retry once and return the 200."""
+        error_response = MagicMock()
+        error_response.status_code = 503
+
+        success_response = MagicMock()
+        success_response.status_code = 200
+
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(
+            side_effect=[error_response, success_response]
+        )
+        steamgifts_client._client = mock_client
+
+        response = await steamgifts_client._request(
+            "GET", "https://www.steamgifts.com/x"
+        )
+
+        assert response is success_response
+        assert mock_client.get.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_retries_on_transport_error_then_raises(
+        self, steamgifts_client
+    ):
+        """Persistent transport errors are retried max_retries times, then
+        wrapped in a SteamGiftsError instead of leaking the raw exception."""
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(
+            side_effect=httpx.ConnectError("boom")
+        )
+        steamgifts_client._client = mock_client
+
+        with pytest.raises(SteamGiftsError):
+            await steamgifts_client._request(
+                "GET", "https://www.steamgifts.com/x"
+            )
+
+        # Initial attempt + max_retries retries
+        assert mock_client.get.call_count == steamgifts_client.max_retries + 1
+
+    @pytest.mark.asyncio
+    async def test_gives_up_after_max_retries_on_bad_status(
+        self, steamgifts_client
+    ):
+        """A response that keeps failing is returned as-is once retries are
+        exhausted, so the caller's own status-code handling still applies."""
+        error_response = MagicMock()
+        error_response.status_code = 500
+
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=error_response)
+        steamgifts_client._client = mock_client
+
+        response = await steamgifts_client._request(
+            "GET", "https://www.steamgifts.com/x"
+        )
+
+        assert response is error_response
+        assert mock_client.get.call_count == steamgifts_client.max_retries + 1
+
+    @pytest.mark.asyncio
+    async def test_enforces_minimum_interval_between_requests(
+        self, monkeypatch
+    ):
+        """Consecutive requests should sleep for the configured minimum
+        interval rather than firing back-to-back."""
+        client = SteamGiftsClient(
+            phpsessid="test",
+            user_agent="test",
+            min_request_interval_seconds=5,
+        )
+
+        response = MagicMock()
+        response.status_code = 200
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=response)
+        client._client = mock_client
+
+        sleep_calls = []
+
+        async def fake_sleep(seconds):
+            sleep_calls.append(seconds)
+
+        monkeypatch.setattr("utils.steamgifts_client.asyncio.sleep", fake_sleep)
+
+        await client._request("GET", "https://www.steamgifts.com/x")
+        await client._request("GET", "https://www.steamgifts.com/x")
+
+        # First request: no prior request, no wait. Second: should wait
+        # close to the configured minimum interval.
+        assert len(sleep_calls) == 1
+        assert 0 < sleep_calls[0] <= 5
 
 
 @pytest.mark.asyncio
