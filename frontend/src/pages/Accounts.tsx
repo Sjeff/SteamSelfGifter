@@ -747,6 +747,10 @@ function AccountRow({
 
           <button
             onClick={() => setExpanded((v) => !v)}
+            aria-label={
+              expanded ? "Hide account details" : "Show account details"
+            }
+            title={expanded ? "Hide account details" : "Show account details"}
             className="p-1.5 rounded-lg text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
           >
             {expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
