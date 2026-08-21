@@ -5,17 +5,17 @@ between repositories and external SteamGifts client.
 """
 
 import asyncio
-from typing import Optional, List, Tuple
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from repositories.giveaway import GiveawayRepository
-from repositories.entry import EntryRepository
-from utils.steamgifts_client import SteamGiftsClient
 from core.exceptions import SteamGiftsError
-from services.game_service import GameService
-from models.giveaway import Giveaway
 from models.entry import Entry
+from models.giveaway import Giveaway
+from repositories.entry import EntryRepository
+from repositories.giveaway import GiveawayRepository
+from services.game_service import GameService
+from utils.steamgifts_client import SteamGiftsClient
 
 
 class GiveawayService:
@@ -59,7 +59,7 @@ class GiveawayService:
         session: AsyncSession,
         steamgifts_client: SteamGiftsClient,
         game_service: GameService,
-        account_id: Optional[int] = None,
+        account_id: int | None = None,
     ):
         """
         Initialize GiveawayService.
@@ -83,11 +83,11 @@ class GiveawayService:
     async def sync_giveaways(
         self,
         pages: int = 1,
-        search_query: Optional[str] = None,
-        giveaway_type: Optional[str] = None,
+        search_query: str | None = None,
+        giveaway_type: str | None = None,
         dlc_only: bool = False,
-        min_copies: Optional[int] = None,
-    ) -> Tuple[int, int]:
+        min_copies: int | None = None,
+    ) -> tuple[int, int]:
         """
         Sync giveaways from SteamGifts to database.
 
@@ -172,7 +172,6 @@ class GiveawayService:
             >>> new_wins = await service.sync_wins(pages=2)
             >>> print(f"Found {new_wins} new wins!")
         """
-        from datetime import datetime
 
         new_wins = 0
 
@@ -187,7 +186,7 @@ class GiveawayService:
                     if giveaway and not giveaway.is_won:
                         # Mark as won
                         giveaway.is_won = True
-                        giveaway.won_at = win.get("won_at") or datetime.now(timezone.utc)
+                        giveaway.won_at = win.get("won_at") or datetime.now(UTC)
                         new_wins += 1
 
                     elif not giveaway:
@@ -202,7 +201,7 @@ class GiveawayService:
                             game_id=win.get("game_id"),
                             is_entered=True,
                             is_won=True,
-                            won_at=win.get("won_at") or datetime.now(timezone.utc),
+                            won_at=win.get("won_at") or datetime.now(UTC),
                         )
                         new_wins += 1
 
@@ -272,7 +271,7 @@ class GiveawayService:
 
     async def get_won_giveaways(
         self, limit: int = 50, offset: int = 0
-    ) -> List[Giveaway]:
+    ) -> list[Giveaway]:
         """
         Get all won giveaways from database.
 
@@ -342,7 +341,7 @@ class GiveawayService:
 
     async def enter_giveaway(
         self, giveaway_code: str, entry_type: str = "manual"
-    ) -> Optional[Entry]:
+    ) -> Entry | None:
         """
         Enter a giveaway and record the entry.
 
@@ -421,12 +420,13 @@ class GiveawayService:
     async def get_eligible_giveaways(
         self,
         min_price: int = 0,
-        max_price: Optional[int] = None,
-        min_score: Optional[int] = None,
-        min_reviews: Optional[int] = None,
-        max_game_age: Optional[int] = None,
+        max_price: int | None = None,
+        min_score: int | None = None,
+        min_reviews: int | None = None,
+        max_game_age: int | None = None,
         limit: int = 50,
-    ) -> List[Giveaway]:
+        wishlist_priority: bool = False,
+    ) -> list[Giveaway]:
         """
         Get eligible giveaways based on criteria.
 
@@ -444,9 +444,15 @@ class GiveawayService:
             min_reviews: Minimum number of reviews
             max_game_age: Maximum game age in years (None = no limit)
             limit: Maximum results to return
+            wishlist_priority: If True, wishlist giveaways are fetched first,
+                bypassing the price/game-quality filters above (they still
+                have to be active, not hidden, not entered), and the
+                remaining slots up to `limit` are filled with the regular
+                filtered pool.
 
         Returns:
-            List of eligible giveaways
+            List of eligible giveaways. When wishlist_priority is set,
+            wishlist giveaways come first.
 
         Example:
             >>> eligible = await service.get_eligible_giveaways(
@@ -457,6 +463,26 @@ class GiveawayService:
             ...     limit=10
             ... )
         """
+        if wishlist_priority:
+            wishlist_giveaways = await self.giveaway_repo.get_eligible_wishlist(
+                limit=limit,
+            )
+            remaining = max(limit - len(wishlist_giveaways), 0)
+            regular_giveaways = (
+                await self.giveaway_repo.get_eligible(
+                    min_price=min_price,
+                    max_price=max_price,
+                    min_score=min_score,
+                    min_reviews=min_reviews,
+                    max_game_age=max_game_age,
+                    limit=remaining,
+                    exclude_wishlist=True,
+                )
+                if remaining
+                else []
+            )
+            return wishlist_giveaways + regular_giveaways
+
         giveaways = await self.giveaway_repo.get_eligible(
             min_price=min_price,
             max_price=max_price,
@@ -469,9 +495,9 @@ class GiveawayService:
         return giveaways
 
     async def get_active_giveaways(
-        self, limit: Optional[int] = None, offset: int = 0, min_score: Optional[int] = None,
-        is_safe: Optional[bool] = None
-    ) -> List[Giveaway]:
+        self, limit: int | None = None, offset: int = 0, min_score: int | None = None,
+        is_safe: bool | None = None
+    ) -> list[Giveaway]:
         """
         Get all active (non-expired) giveaways.
 
@@ -490,8 +516,8 @@ class GiveawayService:
         return await self.giveaway_repo.get_active(limit=limit, offset=offset, min_score=min_score, is_safe=is_safe)
 
     async def get_all_giveaways(
-        self, limit: Optional[int] = None, offset: int = 0
-    ) -> List[Giveaway]:
+        self, limit: int | None = None, offset: int = 0
+    ) -> list[Giveaway]:
         """
         Get all giveaways (including expired ones).
 
@@ -508,8 +534,8 @@ class GiveawayService:
         return await self.giveaway_repo.get_all(limit=limit, offset=offset)
 
     async def get_entered_giveaways(
-        self, limit: Optional[int] = None, active_only: bool = False
-    ) -> List[Giveaway]:
+        self, limit: int | None = None, active_only: bool = False
+    ) -> list[Giveaway]:
         """
         Get entered giveaways.
 
@@ -526,8 +552,8 @@ class GiveawayService:
         return await self.giveaway_repo.get_entered(limit=limit, active_only=active_only)
 
     async def get_expiring_soon(
-        self, hours: int = 24, limit: Optional[int] = None
-    ) -> List[Giveaway]:
+        self, hours: int = 24, limit: int | None = None
+    ) -> list[Giveaway]:
         """
         Get giveaways expiring within specified hours.
 
@@ -544,8 +570,8 @@ class GiveawayService:
         return await self.giveaway_repo.get_expiring_soon(hours=hours, limit=limit)
 
     async def enrich_giveaways_with_game_data(
-        self, giveaways: List[Giveaway]
-    ) -> List[Giveaway]:
+        self, giveaways: list[Giveaway]
+    ) -> list[Giveaway]:
         """
         Enrich giveaways with game data (thumbnail, reviews).
 
@@ -729,8 +755,8 @@ class GiveawayService:
         return True
 
     async def search_giveaways(
-        self, query: str, limit: Optional[int] = 20
-    ) -> List[Giveaway]:
+        self, query: str, limit: int | None = 20
+    ) -> list[Giveaway]:
         """
         Search giveaways by game name.
 
@@ -747,8 +773,8 @@ class GiveawayService:
         return await self.giveaway_repo.search_by_game_name(query, limit=limit)
 
     async def get_entry_history(
-        self, limit: int = 50, status: Optional[str] = None
-    ) -> List[Entry]:
+        self, limit: int = 50, status: str | None = None
+    ) -> list[Entry]:
         """
         Get entry history.
 
@@ -936,7 +962,7 @@ class GiveawayService:
 
     async def enter_giveaway_with_safety_check(
         self, giveaway_code: str, entry_type: str = "auto"
-    ) -> Optional[Entry]:
+    ) -> Entry | None:
         """
         Enter a giveaway with safety check.
 

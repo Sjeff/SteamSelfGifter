@@ -5,13 +5,13 @@ methods for filtering eligible giveaways, tracking entries, and managing
 giveaway visibility.
 """
 
-from typing import List, Optional
-from datetime import datetime, timedelta, timezone
-from sqlalchemy import select, and_, or_
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.giveaway import Giveaway
 from models.game import Game
+from models.giveaway import Giveaway
 from repositories.base import BaseRepository
 
 
@@ -36,7 +36,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         ...     giveaway = await repo.get_by_code("AbCd1")
     """
 
-    def __init__(self, session: AsyncSession, account_id: Optional[int] = None):
+    def __init__(self, session: AsyncSession, account_id: int | None = None):
         """
         Initialize GiveawayRepository with database session.
 
@@ -65,8 +65,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return query
 
     async def get_all(
-        self, limit: Optional[int] = None, offset: int = 0
-    ) -> List[Giveaway]:
+        self, limit: int | None = None, offset: int = 0
+    ) -> list[Giveaway]:
         """
         Get all giveaways with proper ordering.
 
@@ -92,7 +92,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_by_code(self, code: str) -> Optional[Giveaway]:
+    async def get_by_code(self, code: str) -> Giveaway | None:
         """
         Get giveaway by SteamGifts code (scoped to account if account_id is set).
 
@@ -113,9 +113,9 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return result.scalar_one_or_none()
 
     async def get_active(
-        self, limit: Optional[int] = None, offset: int = 0, min_score: Optional[int] = None,
-        is_safe: Optional[bool] = None
-    ) -> List[Giveaway]:
+        self, limit: int | None = None, offset: int = 0, min_score: int | None = None,
+        is_safe: bool | None = None
+    ) -> list[Giveaway]:
         """
         Get all active (non-expired) giveaways.
 
@@ -136,7 +136,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> len(active)
             10
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Base conditions
         conditions = [
@@ -187,12 +187,13 @@ class GiveawayRepository(BaseRepository[Giveaway]):
     async def get_eligible(
         self,
         min_price: int,
-        min_score: Optional[int] = None,
-        min_reviews: Optional[int] = None,
-        max_price: Optional[int] = None,
-        max_game_age: Optional[int] = None,
-        limit: Optional[int] = None,
-    ) -> List[Giveaway]:
+        min_score: int | None = None,
+        min_reviews: int | None = None,
+        max_price: int | None = None,
+        max_game_age: int | None = None,
+        limit: int | None = None,
+        exclude_wishlist: bool = False,
+    ) -> list[Giveaway]:
         """
         Get eligible giveaways based on autojoin criteria.
 
@@ -210,6 +211,9 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             max_price: Maximum giveaway price in points, optional
             max_game_age: Maximum game age in years, optional
             limit: Maximum number to return
+            exclude_wishlist: If True, exclude wishlist giveaways (used when
+                wishlist giveaways are fetched separately via
+                get_eligible_wishlist(), to avoid duplicates)
 
         Returns:
             List of eligible giveaways, ordered by price (highest first)
@@ -224,7 +228,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             ...     limit=5
             ... )
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Base filters: active, not hidden, not entered, price range
         conditions = [
@@ -242,6 +246,9 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
         if max_price is not None:
             conditions.append(self.model.price <= max_price)
+
+        if exclude_wishlist:
+            conditions.append(self.model.is_wishlist == False)  # noqa: E712
 
         # Determine if we need to JOIN with Game table
         needs_game_join = (
@@ -291,7 +298,50 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
         return giveaways
 
-    async def get_by_game(self, game_id: int) -> List[Giveaway]:
+    async def get_eligible_wishlist(self, limit: int | None = None) -> list[Giveaway]:
+        """
+        Get wishlist giveaways eligible for autojoin, bypassing the usual
+        price/game-quality filters (min_price, min_score, min_reviews,
+        max_game_age) that apply to the regular autojoin pool.
+
+        Still respects: active, not hidden, not already entered.
+
+        Args:
+            limit: Maximum number to return
+
+        Returns:
+            List of eligible wishlist giveaways, ordered by price (highest first)
+
+        Example:
+            >>> wishlist_eligible = await repo.get_eligible_wishlist(limit=10)
+        """
+        now = datetime.now(UTC)
+
+        conditions = [
+            self.model.end_time.isnot(None),
+            self.model.end_time > now,
+            self.model.is_hidden == False,  # noqa: E712
+            self.model.is_entered == False,  # noqa: E712
+            self.model.is_wishlist == True,  # noqa: E712
+        ]
+
+        f = self._account_filter()
+        if f is not None:
+            conditions.append(f)
+
+        query = (
+            select(self.model)
+            .where(and_(*conditions))
+            .order_by(self.model.price.desc())
+        )
+
+        if limit:
+            query = query.limit(limit)
+
+        result = await self.session.execute(query)
+        return list(result.scalars().all())
+
+    async def get_by_game(self, game_id: int) -> list[Giveaway]:
         """
         Get all giveaways for a specific game.
 
@@ -308,7 +358,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_hidden(self) -> List[Giveaway]:
+    async def get_hidden(self) -> list[Giveaway]:
         """
         Get all hidden giveaways.
 
@@ -323,8 +373,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return list(result.scalars().all())
 
     async def get_entered(
-        self, limit: Optional[int] = None, active_only: bool = False
-    ) -> List[Giveaway]:
+        self, limit: int | None = None, active_only: bool = False
+    ) -> list[Giveaway]:
         """
         Get entered giveaways.
 
@@ -338,7 +388,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         Example:
             >>> entered = await repo.get_entered(limit=20, active_only=True)
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         conditions = [self.model.is_entered == True]  # noqa: E712
 
@@ -364,8 +414,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return list(result.scalars().all())
 
     async def get_wishlist(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[Giveaway]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[Giveaway]:
         """
         Get active wishlist giveaways.
 
@@ -379,7 +429,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         Example:
             >>> wishlist = await repo.get_wishlist(limit=20)
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         conditions = [
             self.model.is_wishlist == True,  # noqa: E712
             self.model.is_hidden == False,  # noqa: E712
@@ -403,8 +453,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return list(result.scalars().all())
 
     async def get_won(
-        self, limit: Optional[int] = None, offset: Optional[int] = None
-    ) -> List[Giveaway]:
+        self, limit: int | None = None, offset: int | None = None
+    ) -> list[Giveaway]:
         """
         Get won giveaways.
 
@@ -452,7 +502,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         result = await self.session.execute(query)
         return result.scalar() or 0
 
-    async def hide_giveaway(self, giveaway_id: int) -> Optional[Giveaway]:
+    async def hide_giveaway(self, giveaway_id: int) -> Giveaway | None:
         """
         Mark giveaway as hidden.
 
@@ -469,7 +519,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         """
         return await self.update(giveaway_id, is_hidden=True)
 
-    async def unhide_giveaway(self, giveaway_id: int) -> Optional[Giveaway]:
+    async def unhide_giveaway(self, giveaway_id: int) -> Giveaway | None:
         """
         Mark giveaway as not hidden.
 
@@ -487,8 +537,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return await self.update(giveaway_id, is_hidden=False)
 
     async def mark_entered(
-        self, giveaway_id: int, entered_at: Optional[datetime] = None
-    ) -> Optional[Giveaway]:
+        self, giveaway_id: int, entered_at: datetime | None = None
+    ) -> Giveaway | None:
         """
         Mark giveaway as entered.
 
@@ -505,15 +555,15 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             True
         """
         if entered_at is None:
-            entered_at = datetime.now(timezone.utc)
+            entered_at = datetime.now(UTC)
 
         return await self.update(
             giveaway_id, is_entered=True, entered_at=entered_at
         )
 
     async def get_expiring_soon(
-        self, hours: int = 24, limit: Optional[int] = None
-    ) -> List[Giveaway]:
+        self, hours: int = 24, limit: int | None = None
+    ) -> list[Giveaway]:
         """
         Get giveaways expiring within specified hours.
 
@@ -528,7 +578,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> # Get giveaways ending in next 6 hours
             >>> expiring = await repo.get_expiring_soon(hours=6, limit=10)
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         cutoff = now + timedelta(hours=hours)
 
         query = (
@@ -562,7 +612,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> count = await repo.count_active()
             >>> print(f"Active giveaways: {count}")
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         query = select(self.model).where(
             and_(
                 self.model.end_time.isnot(None),
@@ -587,8 +637,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return len(list(result.scalars().all()))
 
     async def search_by_game_name(
-        self, query_text: str, limit: Optional[int] = None
-    ) -> List[Giveaway]:
+        self, query_text: str, limit: int | None = None
+    ) -> list[Giveaway]:
         """
         Search giveaways by game name (case-insensitive).
 
@@ -615,8 +665,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return list(result.scalars().all())
 
     async def get_safe_giveaways(
-        self, min_safety_score: int = 80, limit: Optional[int] = None
-    ) -> List[Giveaway]:
+        self, min_safety_score: int = 80, limit: int | None = None
+    ) -> list[Giveaway]:
         """
         Get giveaways marked as safe with high safety scores.
 
@@ -647,7 +697,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_unsafe_giveaways(self) -> List[Giveaway]:
+    async def get_unsafe_giveaways(self) -> list[Giveaway]:
         """
         Get giveaways marked as unsafe (potential scams).
 
@@ -661,7 +711,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def get_next_expiring_entered(self) -> Optional[Giveaway]:
+    async def get_next_expiring_entered(self) -> Giveaway | None:
         """
         Get the next entered giveaway that will expire.
 
@@ -676,7 +726,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> if next_ga:
             ...     print(f"Next expires at: {next_ga.end_time}")
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         query = (
             select(self.model)
             .where(
@@ -762,9 +812,9 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> week_ago = datetime.now(timezone.utc) - timedelta(days=7)
             >>> stats = await repo.get_stats_since(week_ago)
         """
-        from sqlalchemy import func, case
+        from sqlalchemy import case, func
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         conditions = [self.model.discovered_at >= since]
         f = self._account_filter()
@@ -854,7 +904,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> stats = await repo.get_safety_stats()
             >>> print(f"Safe: {stats['safe']}, Unsafe: {stats['unsafe']}")
         """
-        from sqlalchemy import func, case
+        from sqlalchemy import case, func
 
         query = select(
             func.count().label("total"),
@@ -883,7 +933,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             "unsafe": row.unsafe or 0,
         }
 
-    async def get_unchecked_eligible(self, limit: int = 1) -> List[Giveaway]:
+    async def get_unchecked_eligible(self, limit: int = 1) -> list[Giveaway]:
         """
         Get eligible giveaways that haven't been safety checked yet.
 
@@ -901,7 +951,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             >>> if unchecked:
             ...     await safety_check(unchecked[0])
         """
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         conditions = [
             self.model.end_time.isnot(None),

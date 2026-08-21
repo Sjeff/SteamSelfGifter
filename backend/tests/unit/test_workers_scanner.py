@@ -1,7 +1,8 @@
 """Unit tests for giveaway scanner worker."""
 
+from unittest.mock import AsyncMock, MagicMock, call, patch
+
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
 
 
 @pytest.mark.asyncio
@@ -55,15 +56,77 @@ async def test_scan_giveaways_success():
         # Verify results
         assert results["new"] == 5
         assert results["updated"] == 2
+        assert results["wishlist_new"] == 5
+        assert results["wishlist_updated"] == 2
         assert results["pages_scanned"] == 3
         assert results["skipped"] is False
         assert "scan_time" in results
 
-        # Verify sync was called
-        mock_giveaway_service.sync_giveaways.assert_called_once_with(pages=3)
+        # Verify the regular scan and the wishlist scan were both run
+        mock_giveaway_service.sync_giveaways.assert_has_calls(
+            [
+                call(pages=3),
+                call(pages=1, giveaway_type="wishlist"),
+            ]
+        )
 
         # Verify event was emitted
         mock_event_manager.broadcast_event.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_scan_giveaways_wishlist_failure_does_not_fail_scan():
+    """A wishlist scan error is logged but the regular scan still succeeds."""
+    from workers.scanner import scan_giveaways
+
+    mock_settings = MagicMock()
+    mock_settings.phpsessid = "test_session"
+    mock_settings.user_agent = "Test Agent"
+    mock_settings.max_scan_pages = 3
+
+    with patch("workers.scanner.AsyncSessionLocal") as mock_session_local, \
+         patch("workers.scanner.SettingsService") as mock_settings_service_cls, \
+         patch("workers.scanner.SteamGiftsClient") as mock_sg_client_cls, \
+         patch("workers.scanner.SteamClient") as mock_steam_client_cls, \
+         patch("workers.scanner.GameService"), \
+         patch("workers.scanner.GiveawayService") as mock_giveaway_service_cls, \
+         patch("workers.scanner.NotificationService") as mock_notification_service_cls, \
+         patch("workers.scanner.event_manager") as mock_event_manager:
+
+        mock_sg_client = AsyncMock()
+        mock_sg_client_cls.return_value = mock_sg_client
+
+        mock_steam_client = AsyncMock()
+        mock_steam_client_cls.return_value = mock_steam_client
+
+        mock_session = AsyncMock()
+        mock_session.__aenter__.return_value = mock_session
+        mock_session.__aexit__.return_value = None
+        mock_session_local.return_value = mock_session
+
+        mock_settings_service = AsyncMock()
+        mock_settings_service.get_settings.return_value = mock_settings
+        mock_settings_service_cls.return_value = mock_settings_service
+
+        mock_giveaway_service = AsyncMock()
+        mock_giveaway_service.sync_giveaways.side_effect = [
+            (5, 2),  # regular scan
+            Exception("wishlist page error"),  # wishlist scan
+        ]
+        mock_giveaway_service_cls.return_value = mock_giveaway_service
+
+        mock_notification_service = AsyncMock()
+        mock_notification_service_cls.return_value = mock_notification_service
+
+        mock_event_manager.broadcast_event = AsyncMock()
+
+        results = await scan_giveaways()
+
+        assert results["new"] == 5
+        assert results["updated"] == 2
+        assert results["wishlist_new"] == 0
+        assert results["wishlist_updated"] == 0
+        assert results["skipped"] is False
 
 
 @pytest.mark.asyncio
@@ -264,7 +327,12 @@ async def test_scan_uses_settings_max_pages():
         results = await scan_giveaways()
 
         assert results["pages_scanned"] == 10
-        mock_giveaway_service.sync_giveaways.assert_called_once_with(pages=10)
+        mock_giveaway_service.sync_giveaways.assert_has_calls(
+            [
+                call(pages=10),
+                call(pages=1, giveaway_type="wishlist"),
+            ]
+        )
 
 
 @pytest.mark.asyncio
@@ -314,4 +382,9 @@ async def test_scan_defaults_to_3_pages():
         results = await scan_giveaways()
 
         assert results["pages_scanned"] == 3
-        mock_giveaway_service.sync_giveaways.assert_called_once_with(pages=3)
+        mock_giveaway_service.sync_giveaways.assert_has_calls(
+            [
+                call(pages=3),
+                call(pages=1, giveaway_type="wishlist"),
+            ]
+        )

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 All changes were made in collaboration with [Claude](https://claude.ai) (Anthropic).
 
+## [Unreleased]
+
+### Added
+
+- New "Prioritize Wishlist" setting (on by default): wishlist giveaways are now entered before the general autojoin pool and bypass the price/review-score/review-count/game-age filters (they still respect active/hidden/entered status and the points budget below).
+
+### Fixed
+
+- The wishlist scanner no longer picks up the "Featured" ad giveaways SteamGifts pins at the top of the wishlist page — it was matching the old `pinned-giveaways__inner-wrap` container class, which SteamGifts has since renamed to `pinned-giveaways`.
+- Auto-join now tracks the points budget across a whole entry cycle instead of only checking the balance once at the start: entering a giveaway that would drop the balance below the configured stop threshold is skipped (a cheaper giveaway later in the queue still gets a chance) rather than potentially overspending.
+- Reduced the risk of the scraper tripping SteamGifts' rate limiting during scan/entry cycles: all `SteamGiftsClient` requests now go through a minimum delay between requests and retry with exponential backoff on 429/5xx responses or transient network errors.
+
 ## [3.1.1]
 
 ### Security

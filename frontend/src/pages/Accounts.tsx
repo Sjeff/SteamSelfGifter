@@ -244,6 +244,7 @@ type SettingsForm = Pick<
   | "autojoin_min_score"
   | "autojoin_min_reviews"
   | "autojoin_max_game_age"
+  | "wishlist_priority"
   | "scan_interval_minutes"
   | "max_scan_pages"
   | "max_entries_per_cycle"
@@ -278,6 +279,7 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
         autojoin_min_score: account.autojoin_min_score,
         autojoin_min_reviews: account.autojoin_min_reviews,
         autojoin_max_game_age: account.autojoin_max_game_age,
+        wishlist_priority: account.wishlist_priority,
         scan_interval_minutes: account.scan_interval_minutes,
         max_scan_pages: account.max_scan_pages,
         max_entries_per_cycle: account.max_entries_per_cycle,
@@ -347,6 +349,12 @@ function AccountSettingsPanel({ accountId }: { accountId: number }) {
 
       {/* Auto-Join Rules */}
       <SectionHeader title="Auto-Join Rules" />
+      <Toggle
+        label="Prioritize Wishlist"
+        description="Enter wishlist giveaways first, bypassing the price/review filters below (still respects the points budget)"
+        checked={form.wishlist_priority}
+        onChange={(v) => set("wishlist_priority", v)}
+      />
       <div className="grid grid-cols-2 gap-3">
         <Input
           label="Start at Points"
