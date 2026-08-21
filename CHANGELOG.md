@@ -15,6 +15,10 @@ All changes were made in collaboration with [Claude](https://claude.ai) (Anthrop
 - A Playwright e2e suite (`npm run test:e2e`) covering the dashboard, accounts, giveaways, navigation, and analytics pages against a mocked API — no backend required to run it.
 - The published Docker image now has a `nightly` tag (rebuilt daily, and on every `master` push) so it keeps picking up base-image security patches even between releases; `latest` now only ever points at the last tagged release, never an arbitrary `master` build.
 
+### Changed
+
+- The Docker build now removes the backend package from its own virtualenv after installing dependencies, so `/app/src` is the single copy of the code running in the container (the installed copy in site-packages was dead weight that could shadow-fight with it).
+
 ### Fixed
 
 - The entry count on a giveaway never actually got stored: the scraper parsed it but the sync step silently dropped it, and separately the parser was looking for a `<span class="giveaway__links">` element that SteamGifts had long since changed to a `<div>`, so every giveaway showed 0 entries. Both are fixed, entry counts (and the win-chance% they drive) now reflect the last scan; the parser also now handles thousands separators ("1,234 entries") and the singular "1 entry".
