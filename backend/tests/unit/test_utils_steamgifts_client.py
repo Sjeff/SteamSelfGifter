@@ -431,7 +431,7 @@ async def test_parse_giveaway_element_success(steamgifts_client):
     <div class="giveaway__row-inner-wrap">
         <a href="/giveaway/XyZ99/awesome-game" class="giveaway__heading__name">Awesome Game</a>
         <span class="giveaway__heading__thin">(75P)</span>
-        <span class="giveaway__links">250 entries</span>
+        <div class="giveaway__links">250 entries</div>
         <span data-timestamp="1640000000"></span>
         <a class="giveaway_image_thumbnail" style="background-image:url('https://cdn.akamai.steamstatic.com/steam/apps/123456/header.jpg')"></a>
     </div>
@@ -449,6 +449,53 @@ async def test_parse_giveaway_element_success(steamgifts_client):
     assert result["entries"] == 250
     assert result["game_id"] == 123456
     assert isinstance(result["end_time"], datetime)
+
+
+@pytest.mark.asyncio
+async def test_parse_giveaway_element_entries_with_thousands_separator(
+    steamgifts_client,
+):
+    """Entry counts with a thousands separator (e.g. "1,619 entries") parse
+    correctly, and don't collide with the singular "1 entry" wording."""
+    from bs4 import BeautifulSoup
+
+    html = """
+    <div class="giveaway__row-inner-wrap">
+        <a href="/giveaway/AbCd1/big-giveaway" class="giveaway__heading__name">Big Giveaway</a>
+        <span class="giveaway__heading__thin">(50P)</span>
+        <div class="giveaway__links">1,619 entries 5 comments</div>
+    </div>
+    """
+
+    soup = BeautifulSoup(html, "html.parser")
+    element = soup.find("div", class_="giveaway__row-inner-wrap")
+
+    result = steamgifts_client._parse_giveaway_element(element)
+
+    assert result is not None
+    assert result["entries"] == 1619
+
+
+@pytest.mark.asyncio
+async def test_parse_giveaway_element_entries_singular(steamgifts_client):
+    """A giveaway with exactly one entry ("1 entry") is parsed as 1."""
+    from bs4 import BeautifulSoup
+
+    html = """
+    <div class="giveaway__row-inner-wrap">
+        <a href="/giveaway/AbCd2/tiny-giveaway" class="giveaway__heading__name">Tiny Giveaway</a>
+        <span class="giveaway__heading__thin">(5P)</span>
+        <div class="giveaway__links">1 entry</div>
+    </div>
+    """
+
+    soup = BeautifulSoup(html, "html.parser")
+    element = soup.find("div", class_="giveaway__row-inner-wrap")
+
+    result = steamgifts_client._parse_giveaway_element(element)
+
+    assert result is not None
+    assert result["entries"] == 1
 
 
 @pytest.mark.asyncio

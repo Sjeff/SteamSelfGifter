@@ -33,6 +33,8 @@ export interface GiveawayFilters {
   limit?: number;
   minScore?: number; // Minimum review score (0-10)
   safetyFilter?: "all" | "safe" | "unsafe"; // Filter by safety status
+  minChance?: number; // Minimum win chance in percent (0.01-100)
+  endingWithin?: number; // Only giveaways ending within this many minutes
   accountId?: number; // Account scope (defaults to selected account from store)
 }
 
@@ -102,6 +104,12 @@ function buildGiveawaysRequest(
   }
   if (filters.safetyFilter && filters.safetyFilter !== "all") {
     params.set("is_safe", filters.safetyFilter === "safe" ? "true" : "false");
+  }
+  if (filters.minChance !== undefined && filters.minChance > 0) {
+    params.set("min_chance", String(filters.minChance));
+  }
+  if (filters.endingWithin !== undefined && filters.endingWithin > 0) {
+    params.set("ending_within", String(filters.endingWithin));
   }
 
   return { endpointPath, params };

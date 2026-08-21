@@ -6,8 +6,9 @@ giveaway visibility.
 """
 
 from datetime import UTC, datetime, timedelta
+from typing import Any
 
-from sqlalchemy import and_, select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.game import Game
@@ -64,6 +65,35 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             query = query.where(f)
         return query
 
+    def _browse_filter_conditions(
+        self,
+        now: datetime,
+        min_chance: float | None,
+        ending_within_minutes: int | None,
+    ) -> list[Any]:
+        """
+        Shared UI browse-filter conditions (chance to win, time remaining).
+
+        A giveaway with no recorded entries yet always passes the chance
+        filter -- its chance is effectively 100%.
+        """
+        conditions: list[Any] = []
+
+        if min_chance is not None and min_chance > 0:
+            conditions.append(
+                or_(
+                    self.model.entries == 0,
+                    self.model.copies * 100.0 / self.model.entries >= min_chance,
+                )
+            )
+
+        if ending_within_minutes is not None and ending_within_minutes > 0:
+            conditions.append(
+                self.model.end_time <= now + timedelta(minutes=ending_within_minutes)
+            )
+
+        return conditions
+
     async def get_all(
         self, limit: int | None = None, offset: int = 0
     ) -> list[Giveaway]:
@@ -114,7 +144,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
 
     async def get_active(
         self, limit: int | None = None, offset: int = 0, min_score: int | None = None,
-        is_safe: bool | None = None
+        is_safe: bool | None = None, min_chance: float | None = None,
+        ending_within_minutes: int | None = None,
     ) -> list[Giveaway]:
         """
         Get all active (non-expired) giveaways.
@@ -127,6 +158,9 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             offset: Number of records to skip (for pagination)
             min_score: Minimum review score (0-10) to filter by
             is_safe: Filter by safety status (True=safe only, False=unsafe only, None=all)
+            min_chance: Minimum win chance in percent (copies/entries*100);
+                giveaways with no recorded entries yet always pass
+            ending_within_minutes: Only giveaways ending within this many minutes
 
         Returns:
             List of active giveaways, ordered by end_time (soonest first)
@@ -153,6 +187,10 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         # Add safety filter
         if is_safe is not None:
             conditions.append(self.model.is_safe == is_safe)  # noqa: E712
+
+        conditions.extend(
+            self._browse_filter_conditions(now, min_chance, ending_within_minutes)
+        )
 
         # If min_score is specified, join with Game table and filter
         # Games default to review_score=0 when unknown
@@ -464,7 +502,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return list(result.scalars().all())
 
     async def get_wishlist(
-        self, limit: int | None = None, offset: int | None = None
+        self, limit: int | None = None, offset: int | None = None,
+        min_chance: float | None = None, ending_within_minutes: int | None = None,
     ) -> list[Giveaway]:
         """
         Get active wishlist giveaways.
@@ -472,6 +511,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         Args:
             limit: Maximum number to return
             offset: Number of records to skip
+            min_chance: Minimum win chance in percent (copies/entries*100)
+            ending_within_minutes: Only giveaways ending within this many minutes
 
         Returns:
             List of wishlist giveaways that are still active (not expired)
@@ -484,6 +525,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             self.model.is_wishlist == True,  # noqa: E712
             self.model.is_hidden == False,  # noqa: E712
             (self.model.end_time == None) | (self.model.end_time > now),  # noqa: E711
+            *self._browse_filter_conditions(now, min_chance, ending_within_minutes),
         ]
         f = self._account_filter()
         if f is not None:
@@ -503,7 +545,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return list(result.scalars().all())
 
     async def get_dlc(
-        self, limit: int | None = None, offset: int | None = None
+        self, limit: int | None = None, offset: int | None = None,
+        min_chance: float | None = None, ending_within_minutes: int | None = None,
     ) -> list[Giveaway]:
         """
         Get active DLC giveaways.
@@ -511,6 +554,8 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         Args:
             limit: Maximum number to return
             offset: Number of records to skip
+            min_chance: Minimum win chance in percent (copies/entries*100)
+            ending_within_minutes: Only giveaways ending within this many minutes
 
         Returns:
             List of DLC giveaways that are still active (not expired)
@@ -523,6 +568,7 @@ class GiveawayRepository(BaseRepository[Giveaway]):
             self.model.is_dlc == True,  # noqa: E712
             self.model.is_hidden == False,  # noqa: E712
             (self.model.end_time == None) | (self.model.end_time > now),  # noqa: E711
+            *self._browse_filter_conditions(now, min_chance, ending_within_minutes),
         ]
         f = self._account_filter()
         if f is not None:

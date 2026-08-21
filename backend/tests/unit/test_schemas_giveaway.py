@@ -1,18 +1,19 @@
 """Unit tests for giveaway API schemas."""
 
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 from pydantic import ValidationError
 
 from api.schemas.giveaway import (
     GiveawayBase,
-    GiveawayResponse,
-    GiveawayList,
-    GiveawayFilter,
-    GiveawayScanRequest,
-    GiveawayScanResponse,
     GiveawayEntryRequest,
     GiveawayEntryResponse,
+    GiveawayFilter,
+    GiveawayList,
+    GiveawayResponse,
+    GiveawayScanRequest,
+    GiveawayScanResponse,
     GiveawayStats,
 )
 
@@ -43,7 +44,7 @@ def test_giveaway_base_with_optional_fields():
         price=50,
         game_id=620,
         copies=2,
-        end_time=datetime.now(timezone.utc),
+        end_time=datetime.now(UTC),
         is_safe=True,
         safety_score=95
     )
@@ -84,20 +85,57 @@ def test_giveaway_response():
         url="https://www.steamgifts.com/giveaway/AbCd1/",
         game_name="Portal 2",
         price=50,
-        discovered_at=datetime.now(timezone.utc)
+        discovered_at=datetime.now(UTC)
     )
 
     assert giveaway.id == 123
     assert giveaway.discovered_at is not None
 
 
+def _make_giveaway_response(copies=1, entries=0):
+    return GiveawayResponse(
+        id=1,
+        code="AbCd1",
+        url="https://www.steamgifts.com/giveaway/AbCd1/",
+        game_name="Portal 2",
+        price=50,
+        copies=copies,
+        entries=entries,
+        discovered_at=datetime.now(UTC),
+    )
+
+
+def test_giveaway_response_win_chance_no_entries_yet():
+    """No recorded entries yet -> 100% (nobody has entered)."""
+    giveaway = _make_giveaway_response(copies=1, entries=0)
+    assert giveaway.win_chance == 100.0
+
+
+def test_giveaway_response_win_chance_ordinary_odds():
+    """Ordinary odds round to two decimals."""
+    giveaway = _make_giveaway_response(copies=1, entries=50)
+    assert giveaway.win_chance == 2.0
+
+
+def test_giveaway_response_win_chance_capped_at_100():
+    """More copies than entries still caps at 100%."""
+    giveaway = _make_giveaway_response(copies=5, entries=2)
+    assert giveaway.win_chance == 100.0
+
+
+def test_giveaway_response_win_chance_long_shot_precision():
+    """Long-shot odds (<1%) use four decimals so they don't collapse to 0%."""
+    giveaway = _make_giveaway_response(copies=1, entries=25000)
+    assert giveaway.win_chance == 0.004
+
+
 def test_giveaway_list():
     """Test GiveawayList."""
     giveaway1 = GiveawayResponse(
-        id=1, code="GA1", url="test", game_name="Game 1", price=50, discovered_at=datetime.now(timezone.utc)
+        id=1, code="GA1", url="test", game_name="Game 1", price=50, discovered_at=datetime.now(UTC)
     )
     giveaway2 = GiveawayResponse(
-        id=2, code="GA2", url="test", game_name="Game 2", price=75, discovered_at=datetime.now(timezone.utc)
+        id=2, code="GA2", url="test", game_name="Game 2", price=75, discovered_at=datetime.now(UTC)
     )
 
     giveaway_list = GiveawayList(giveaways=[giveaway1, giveaway2])

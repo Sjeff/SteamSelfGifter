@@ -255,6 +255,7 @@ class GiveawayService:
                             account_id=self.account_id,
                             game_name=entry["game_name"],
                             price=entry.get("price", 0),
+                            entries=entry.get("entries", 0),
                             game_id=entry.get("game_id"),
                             end_time=entry.get("end_time"),
                             is_entered=True,
@@ -313,6 +314,7 @@ class GiveawayService:
             game_name=ga_data["game_name"],
             price=ga_data["price"],
             copies=ga_data.get("copies", 1),
+            entries=ga_data.get("entries", 0),
             end_time=ga_data.get("end_time"),
             game_id=ga_data.get("game_id"),
             is_wishlist=ga_data.get("is_wishlist", False),
@@ -331,6 +333,10 @@ class GiveawayService:
         """
         # Update mutable fields
         giveaway.end_time = ga_data.get("end_time", giveaway.end_time)
+
+        # Entry counts move constantly; keep the latest scan's value.
+        if ga_data.get("entries") is not None:
+            giveaway.entries = ga_data["entries"]
 
         # Update game_id if we found it and didn't have it before
         if ga_data.get("game_id") and not giveaway.game_id:
@@ -516,7 +522,8 @@ class GiveawayService:
 
     async def get_active_giveaways(
         self, limit: int | None = None, offset: int = 0, min_score: int | None = None,
-        is_safe: bool | None = None
+        is_safe: bool | None = None, min_chance: float | None = None,
+        ending_within_minutes: int | None = None,
     ) -> list[Giveaway]:
         """
         Get all active (non-expired) giveaways.
@@ -526,6 +533,9 @@ class GiveawayService:
             offset: Number of records to skip (for pagination)
             min_score: Minimum review score (0-10) to filter by
             is_safe: Filter by safety status (True=safe only, False=unsafe only, None=all)
+            min_chance: Minimum win chance in percent (copies/entries*100);
+                giveaways with no recorded entries yet always pass
+            ending_within_minutes: Only giveaways ending within this many minutes
 
         Returns:
             List of active giveaways
@@ -533,7 +543,10 @@ class GiveawayService:
         Example:
             >>> active = await service.get_active_giveaways(limit=20, offset=40, min_score=7, is_safe=True)
         """
-        return await self.giveaway_repo.get_active(limit=limit, offset=offset, min_score=min_score, is_safe=is_safe)
+        return await self.giveaway_repo.get_active(
+            limit=limit, offset=offset, min_score=min_score, is_safe=is_safe,
+            min_chance=min_chance, ending_within_minutes=ending_within_minutes,
+        )
 
     async def get_all_giveaways(
         self, limit: int | None = None, offset: int = 0

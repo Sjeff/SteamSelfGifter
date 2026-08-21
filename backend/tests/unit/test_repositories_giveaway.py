@@ -182,6 +182,81 @@ async def test_get_active_ordered_by_end_time(test_db):
 
 
 @pytest.mark.asyncio
+async def test_get_active_min_chance_filter(test_db):
+    """min_chance filters by copies/entries*100; no-entries-yet always passes."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        # 1 copy / 200 entries = 0.5% chance -> fails a 10% min_chance filter
+        await repo.create(
+            code="LONGSHOT",
+            game_name="Game 1",
+            price=50,
+            copies=1,
+            entries=200,
+            url="http://test.com/1",
+            end_time=now + timedelta(hours=24),
+        )
+        # 1 copy / 5 entries = 20% chance -> passes
+        await repo.create(
+            code="GOODODDS",
+            game_name="Game 2",
+            price=50,
+            copies=1,
+            entries=5,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+        )
+        # No entries recorded yet -> always passes regardless of min_chance
+        await repo.create(
+            code="UNSCANNED",
+            game_name="Game 3",
+            price=50,
+            copies=1,
+            entries=0,
+            url="http://test.com/3",
+            end_time=now + timedelta(hours=24),
+        )
+
+        await session.commit()
+
+        active = await repo.get_active(min_chance=10)
+
+        assert {ga.code for ga in active} == {"GOODODDS", "UNSCANNED"}
+
+
+@pytest.mark.asyncio
+async def test_get_active_ending_within_minutes_filter(test_db):
+    """ending_within_minutes only returns giveaways ending soon."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        await repo.create(
+            code="SOON",
+            game_name="Game 1",
+            price=50,
+            url="http://test.com/1",
+            end_time=now + timedelta(minutes=30),
+        )
+        await repo.create(
+            code="LATER",
+            game_name="Game 2",
+            price=50,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+        )
+
+        await session.commit()
+
+        active = await repo.get_active(ending_within_minutes=60)
+
+        assert len(active) == 1
+        assert active[0].code == "SOON"
+
+
+@pytest.mark.asyncio
 async def test_get_eligible_basic_filters(test_db):
     """Test getting eligible giveaways with basic price filter."""
     async with test_db() as session:
