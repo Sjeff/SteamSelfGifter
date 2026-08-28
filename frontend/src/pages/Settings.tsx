@@ -113,6 +113,7 @@ export function Settings() {
         autojoin_min_score: settings.autojoin_min_score,
         autojoin_min_reviews: settings.autojoin_min_reviews,
         autojoin_max_game_age: settings.autojoin_max_game_age,
+        wishlist_priority: settings.wishlist_priority,
         scan_interval_minutes: settings.scan_interval_minutes,
         max_entries_per_cycle: settings.max_entries_per_cycle,
         automation_enabled: settings.automation_enabled,
@@ -248,6 +249,14 @@ export function Settings() {
 
       {/* Auto-Join Rules */}
       <Card title="Auto-Join Rules">
+        <div className="space-y-4 mb-4">
+          <Toggle
+            label="Prioritize Wishlist"
+            description="Enter wishlist giveaways first, bypassing the price/review filters below (still respects the points budget)"
+            checked={formData.wishlist_priority ?? true}
+            onChange={(checked) => handleChange("wishlist_priority", checked)}
+          />
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Input
             label="Start at Points"

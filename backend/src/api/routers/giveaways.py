@@ -4,42 +4,41 @@ This module provides REST API endpoints for giveaway operations,
 including listing, filtering, syncing, entering, and hiding giveaways.
 """
 
-from typing import Optional, Dict, Any
+from typing import Any
+
 from fastapi import APIRouter, HTTPException, Query, status
 
+from api.dependencies import GiveawayServiceDep, SchedulerServiceDep
 from api.schemas.common import create_success_response
 from api.schemas.giveaway import (
-    GiveawayResponse,
-    GiveawayFilter,
-    GiveawayScanRequest,
-    GiveawayScanResponse,
     GiveawayEntryRequest,
     GiveawayEntryResponse,
-    GiveawayStats,
+    GiveawayResponse,
+    GiveawayScanRequest,
+    GiveawayScanResponse,
 )
-from api.dependencies import GiveawayServiceDep, SchedulerServiceDep
 
 router = APIRouter()
 
 
 @router.get(
     "",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="List giveaways",
     description="Get a list of giveaways with optional filtering.",
 )
 async def list_giveaways(
     giveaway_service: GiveawayServiceDep,
-    min_price: Optional[int] = Query(default=None, ge=0, description="Minimum price"),
-    max_price: Optional[int] = Query(default=None, ge=0, description="Maximum price"),
-    min_score: Optional[int] = Query(default=None, ge=0, le=10, description="Minimum review score"),
-    min_reviews: Optional[int] = Query(default=None, ge=0, description="Minimum reviews"),
-    search: Optional[str] = Query(default=None, description="Search by game name"),
-    is_entered: Optional[bool] = Query(default=None, description="Filter by entry status"),
+    min_price: int | None = Query(default=None, ge=0, description="Minimum price"),
+    max_price: int | None = Query(default=None, ge=0, description="Maximum price"),
+    min_score: int | None = Query(default=None, ge=0, le=10, description="Minimum review score"),
+    min_reviews: int | None = Query(default=None, ge=0, description="Minimum reviews"),
+    search: str | None = Query(default=None, description="Search by game name"),
+    is_entered: bool | None = Query(default=None, description="Filter by entry status"),
     active_only: bool = Query(default=False, description="Only show non-expired giveaways"),
     limit: int = Query(default=50, ge=1, le=200, description="Maximum results"),
     offset: int = Query(default=0, ge=0, description="Number of records to skip"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     List giveaways with filtering options.
 
@@ -95,17 +94,19 @@ async def list_giveaways(
 
 @router.get(
     "/active",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Get active giveaways",
     description="Get all active (non-expired) giveaways.",
 )
 async def get_active_giveaways(
     giveaway_service: GiveawayServiceDep,
-    min_score: Optional[int] = Query(default=None, ge=0, le=10, description="Minimum review score (0-10)"),
-    is_safe: Optional[bool] = Query(default=None, description="Filter by safety status (true=safe, false=unsafe)"),
+    min_score: int | None = Query(default=None, ge=0, le=10, description="Minimum review score (0-10)"),
+    is_safe: bool | None = Query(default=None, description="Filter by safety status (true=safe, false=unsafe)"),
+    min_chance: float | None = Query(default=None, ge=0.01, le=100, description="Minimum win chance in percent"),
+    ending_within: int | None = Query(default=None, ge=1, description="Only giveaways ending within this many minutes"),
     limit: int = Query(default=50, ge=1, le=200, description="Maximum results"),
     offset: int = Query(default=0, ge=0, description="Number of records to skip"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get active giveaways.
 
@@ -113,7 +114,8 @@ async def get_active_giveaways(
         Success response with list of active giveaways
     """
     giveaways = await giveaway_service.get_active_giveaways(
-        limit=limit, offset=offset, min_score=min_score, is_safe=is_safe
+        limit=limit, offset=offset, min_score=min_score, is_safe=is_safe,
+        min_chance=min_chance, ending_within_minutes=ending_within,
     )
 
     # Enrich with game data (thumbnails, reviews)
@@ -134,22 +136,67 @@ async def get_active_giveaways(
 
 @router.get(
     "/wishlist",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Get wishlist giveaways",
     description="Get active giveaways for games on user's Steam wishlist.",
 )
 async def get_wishlist_giveaways(
     giveaway_service: GiveawayServiceDep,
+    min_chance: float | None = Query(default=None, ge=0.01, le=100, description="Minimum win chance in percent"),
+    ending_within: int | None = Query(default=None, ge=1, description="Only giveaways ending within this many minutes"),
     limit: int = Query(default=50, ge=1, le=200, description="Maximum results"),
     offset: int = Query(default=0, ge=0, description="Number of records to skip"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get wishlist giveaways.
 
     Returns:
         Success response with list of wishlist giveaways
     """
-    giveaways = await giveaway_service.giveaway_repo.get_wishlist(limit=limit, offset=offset)
+    giveaways = await giveaway_service.giveaway_repo.get_wishlist(
+        limit=limit, offset=offset,
+        min_chance=min_chance, ending_within_minutes=ending_within,
+    )
+
+    # Enrich with game data (thumbnails, reviews)
+    giveaways = await giveaway_service.enrich_giveaways_with_game_data(giveaways)
+
+    giveaway_list = [
+        GiveawayResponse.model_validate(g).model_dump()
+        for g in giveaways
+    ]
+
+    return create_success_response(
+        data={
+            "giveaways": giveaway_list,
+            "count": len(giveaway_list),
+        }
+    )
+
+
+@router.get(
+    "/dlc",
+    response_model=dict[str, Any],
+    summary="Get DLC giveaways",
+    description="Get active giveaways for DLC content.",
+)
+async def get_dlc_giveaways(
+    giveaway_service: GiveawayServiceDep,
+    min_chance: float | None = Query(default=None, ge=0.01, le=100, description="Minimum win chance in percent"),
+    ending_within: int | None = Query(default=None, ge=1, description="Only giveaways ending within this many minutes"),
+    limit: int = Query(default=50, ge=1, le=200, description="Maximum results"),
+    offset: int = Query(default=0, ge=0, description="Number of records to skip"),
+) -> dict[str, Any]:
+    """
+    Get DLC giveaways.
+
+    Returns:
+        Success response with list of DLC giveaways
+    """
+    giveaways = await giveaway_service.giveaway_repo.get_dlc(
+        limit=limit, offset=offset,
+        min_chance=min_chance, ending_within_minutes=ending_within,
+    )
 
     # Enrich with game data (thumbnails, reviews)
     giveaways = await giveaway_service.enrich_giveaways_with_game_data(giveaways)
@@ -169,7 +216,7 @@ async def get_wishlist_giveaways(
 
 @router.get(
     "/won",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Get won giveaways",
     description="Get giveaways that the user has won.",
 )
@@ -177,7 +224,7 @@ async def get_won_giveaways(
     giveaway_service: GiveawayServiceDep,
     limit: int = Query(default=50, ge=1, le=200, description="Maximum results"),
     offset: int = Query(default=0, ge=0, description="Number of records to skip"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get won giveaways.
 
@@ -208,7 +255,7 @@ async def get_won_giveaways(
 
 @router.get(
     "/expiring",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Get expiring giveaways",
     description="Get giveaways expiring within specified hours.",
 )
@@ -216,7 +263,7 @@ async def get_expiring_giveaways(
     giveaway_service: GiveawayServiceDep,
     hours: int = Query(default=24, ge=1, le=168, description="Hours until expiration"),
     limit: int = Query(default=20, ge=1, le=100, description="Maximum results"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get giveaways expiring soon.
 
@@ -240,18 +287,18 @@ async def get_expiring_giveaways(
 
 @router.get(
     "/eligible",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Get eligible giveaways",
     description="Get giveaways that match auto-join criteria.",
 )
 async def get_eligible_giveaways(
     giveaway_service: GiveawayServiceDep,
     min_price: int = Query(default=0, ge=0, description="Minimum price"),
-    max_price: Optional[int] = Query(default=None, ge=0, description="Maximum price"),
-    min_score: Optional[int] = Query(default=None, ge=0, le=10, description="Minimum review score"),
-    min_reviews: Optional[int] = Query(default=None, ge=0, description="Minimum reviews"),
+    max_price: int | None = Query(default=None, ge=0, description="Maximum price"),
+    min_score: int | None = Query(default=None, ge=0, le=10, description="Minimum review score"),
+    min_reviews: int | None = Query(default=None, ge=0, description="Minimum reviews"),
     limit: int = Query(default=20, ge=1, le=100, description="Maximum results"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get eligible giveaways based on criteria.
 
@@ -280,13 +327,13 @@ async def get_eligible_giveaways(
 
 @router.get(
     "/stats",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Get giveaway statistics",
     description="Get statistics about giveaways in the database.",
 )
 async def get_giveaway_stats(
     giveaway_service: GiveawayServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get giveaway statistics.
 
@@ -299,14 +346,14 @@ async def get_giveaway_stats(
 
 @router.get(
     "/{code}",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Get giveaway by code",
     description="Get a specific giveaway by its SteamGifts code.",
 )
 async def get_giveaway(
     code: str,
     giveaway_service: GiveawayServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Get a specific giveaway by code.
 
@@ -333,14 +380,14 @@ async def get_giveaway(
 
 @router.post(
     "/sync",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Sync giveaways",
     description="Sync giveaways from SteamGifts. Requires authentication.",
 )
 async def sync_giveaways(
     giveaway_service: GiveawayServiceDep,
     request: GiveawayScanRequest = GiveawayScanRequest(),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Sync giveaways from SteamGifts.
 
@@ -372,7 +419,7 @@ async def sync_giveaways(
 
 @router.post(
     "/{code}/enter",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Enter a giveaway",
     description="Enter a specific giveaway. Requires authentication.",
 )
@@ -381,7 +428,7 @@ async def enter_giveaway(
     giveaway_service: GiveawayServiceDep,
     scheduler_service: SchedulerServiceDep,
     request: GiveawayEntryRequest = GiveawayEntryRequest(),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Enter a giveaway.
 
@@ -434,14 +481,14 @@ async def enter_giveaway(
 
 @router.post(
     "/{code}/hide",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Hide a giveaway",
     description="Hide a giveaway from recommendations.",
 )
 async def hide_giveaway(
     code: str,
     giveaway_service: GiveawayServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Hide a giveaway.
 
@@ -471,14 +518,14 @@ async def hide_giveaway(
 
 @router.post(
     "/{code}/unhide",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Unhide a giveaway",
     description="Unhide a previously hidden giveaway.",
 )
 async def unhide_giveaway(
     code: str,
     giveaway_service: GiveawayServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Unhide a giveaway.
 
@@ -508,14 +555,14 @@ async def unhide_giveaway(
 
 @router.post(
     "/{code}/remove-entry",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Remove entry from a giveaway",
     description="Remove an entry from a giveaway you previously entered.",
 )
 async def remove_giveaway_entry(
     code: str,
     giveaway_service: GiveawayServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Remove an entry from a giveaway.
 
@@ -545,7 +592,7 @@ async def remove_giveaway_entry(
 
 @router.get(
     "/search/{query}",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Search giveaways",
     description="Search giveaways by game name.",
 )
@@ -553,7 +600,7 @@ async def search_giveaways(
     query: str,
     giveaway_service: GiveawayServiceDep,
     limit: int = Query(default=20, ge=1, le=100, description="Maximum results"),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Search giveaways by game name.
 
@@ -581,14 +628,14 @@ async def search_giveaways(
 
 @router.post(
     "/{code}/check-safety",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Check giveaway safety",
     description="Check if a giveaway is safe to enter (trap detection).",
 )
 async def check_giveaway_safety(
     code: str,
     giveaway_service: GiveawayServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Check if a giveaway is safe to enter.
 
@@ -616,14 +663,14 @@ async def check_giveaway_safety(
 
 @router.post(
     "/{code}/hide-on-steamgifts",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Hide game on SteamGifts",
     description="Hide all giveaways for this game on SteamGifts.com",
 )
 async def hide_on_steamgifts(
     code: str,
     giveaway_service: GiveawayServiceDep,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Hide a game on SteamGifts.
 
@@ -657,7 +704,7 @@ async def hide_on_steamgifts(
 
 @router.post(
     "/{code}/comment",
-    response_model=Dict[str, Any],
+    response_model=dict[str, Any],
     summary="Post comment on giveaway",
     description="Post a comment on a SteamGifts giveaway (e.g., 'Thanks!').",
 )
@@ -665,7 +712,7 @@ async def post_comment(
     code: str,
     giveaway_service: GiveawayServiceDep,
     comment: str = "Thanks!",
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Post a comment on a giveaway.
 

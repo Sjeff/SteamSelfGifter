@@ -1,7 +1,8 @@
 """Account model for multi-account SteamGifts support."""
 
 from datetime import datetime
-from sqlalchemy import String, Integer, Boolean, DateTime
+
+from sqlalchemy import Boolean, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.base import Base, TimestampMixin, TZDateTime
@@ -129,6 +130,11 @@ class Account(Base, TimestampMixin):
         nullable=True,
         default=None,
         comment="Maximum game age in years (None = no limit)",
+    )
+    wishlist_priority: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        comment="Process wishlist giveaways before general autojoin, bypassing price/game-quality filters",
     )
 
     # ==================== Scheduler Settings ====================

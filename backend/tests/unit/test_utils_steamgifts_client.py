@@ -1,17 +1,20 @@
 """Unit tests for SteamGiftsClient."""
 
-import pytest
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
-import httpx
 
+import httpx
+import pytest
+
+from core.exceptions import (
+    SteamGiftsError,
+)
+from core.exceptions import (
+    SteamGiftsSessionExpiredError as SteamGiftsAuthError,
+)
 from utils.steamgifts_client import (
     SteamGiftsClient,
     SteamGiftsNotFoundError,
-)
-from core.exceptions import (
-    SteamGiftsError,
-    SteamGiftsSessionExpiredError as SteamGiftsAuthError,
 )
 
 
@@ -23,6 +26,8 @@ def steamgifts_client():
         user_agent="TestBot/1.0",
         xsrf_token="test_xsrf_token",
         timeout_seconds=30,
+        min_request_interval_seconds=0,
+        retry_backoff_seconds=0,
     )
     return client
 
@@ -78,6 +83,107 @@ async def test_steamgifts_client_context_manager(steamgifts_client):
 
     # Client should be closed after context
     assert steamgifts_client._client is None
+
+
+class TestRequestRateLimitingAndRetry:
+    """Tests for the _request() rate-limiting and retry/backoff wrapper."""
+
+    @pytest.mark.asyncio
+    async def test_retries_on_retryable_status_then_succeeds(
+        self, steamgifts_client
+    ):
+        """A 503 followed by a 200 should retry once and return the 200."""
+        error_response = MagicMock()
+        error_response.status_code = 503
+
+        success_response = MagicMock()
+        success_response.status_code = 200
+
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(
+            side_effect=[error_response, success_response]
+        )
+        steamgifts_client._client = mock_client
+
+        response = await steamgifts_client._request(
+            "GET", "https://www.steamgifts.com/x"
+        )
+
+        assert response is success_response
+        assert mock_client.get.call_count == 2
+
+    @pytest.mark.asyncio
+    async def test_retries_on_transport_error_then_raises(
+        self, steamgifts_client
+    ):
+        """Persistent transport errors are retried max_retries times, then
+        wrapped in a SteamGiftsError instead of leaking the raw exception."""
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(
+            side_effect=httpx.ConnectError("boom")
+        )
+        steamgifts_client._client = mock_client
+
+        with pytest.raises(SteamGiftsError):
+            await steamgifts_client._request(
+                "GET", "https://www.steamgifts.com/x"
+            )
+
+        # Initial attempt + max_retries retries
+        assert mock_client.get.call_count == steamgifts_client.max_retries + 1
+
+    @pytest.mark.asyncio
+    async def test_gives_up_after_max_retries_on_bad_status(
+        self, steamgifts_client
+    ):
+        """A response that keeps failing is returned as-is once retries are
+        exhausted, so the caller's own status-code handling still applies."""
+        error_response = MagicMock()
+        error_response.status_code = 500
+
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=error_response)
+        steamgifts_client._client = mock_client
+
+        response = await steamgifts_client._request(
+            "GET", "https://www.steamgifts.com/x"
+        )
+
+        assert response is error_response
+        assert mock_client.get.call_count == steamgifts_client.max_retries + 1
+
+    @pytest.mark.asyncio
+    async def test_enforces_minimum_interval_between_requests(
+        self, monkeypatch
+    ):
+        """Consecutive requests should sleep for the configured minimum
+        interval rather than firing back-to-back."""
+        client = SteamGiftsClient(
+            phpsessid="test",
+            user_agent="test",
+            min_request_interval_seconds=5,
+        )
+
+        response = MagicMock()
+        response.status_code = 200
+        mock_client = AsyncMock()
+        mock_client.get = AsyncMock(return_value=response)
+        client._client = mock_client
+
+        sleep_calls = []
+
+        async def fake_sleep(seconds):
+            sleep_calls.append(seconds)
+
+        monkeypatch.setattr("utils.steamgifts_client.asyncio.sleep", fake_sleep)
+
+        await client._request("GET", "https://www.steamgifts.com/x")
+        await client._request("GET", "https://www.steamgifts.com/x")
+
+        # First request: no prior request, no wait. Second: should wait
+        # close to the configured minimum interval.
+        assert len(sleep_calls) == 1
+        assert 0 < sleep_calls[0] <= 5
 
 
 @pytest.mark.asyncio
@@ -229,6 +335,58 @@ async def test_get_giveaways_success(steamgifts_client):
 
 
 @pytest.mark.asyncio
+async def test_get_giveaways_skips_pinned_featured_section(steamgifts_client):
+    """Pinned/'Featured' ad giveaways are excluded, real rows are kept.
+
+    Covers both the current SteamGifts markup (div.pinned-giveaways) and the
+    older one (div.pinned-giveaways__inner-wrap).
+    """
+    mock_html = """
+    <html>
+        <body>
+            <div class="pinned-giveaways-header">Featured</div>
+            <div class="pinned-giveaways">
+                <div class="giveaway__row-outer-wrap">
+                    <div class="giveaway__row-inner-wrap">
+                        <a href="/giveaway/AdNew/ad-game" class="giveaway__heading__name">Ad Game (new markup)</a>
+                        <span class="giveaway__heading__thin">(0P)</span>
+                    </div>
+                </div>
+            </div>
+            <div class="pinned-giveaways__inner-wrap">
+                <div class="giveaway__row-inner-wrap">
+                    <a href="/giveaway/AdOld/ad-game-old" class="giveaway__heading__name">Ad Game (old markup)</a>
+                    <span class="giveaway__heading__thin">(0P)</span>
+                </div>
+            </div>
+            <div class="giveaway__row-outer-wrap">
+                <div class="giveaway__row-inner-wrap">
+                    <a href="/giveaway/Real1/real-game" class="giveaway__heading__name">Real Game</a>
+                    <span class="giveaway__heading__thin">(30P)</span>
+                </div>
+            </div>
+        </body>
+    </html>
+    """
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.text = mock_html
+
+    mock_client = AsyncMock()
+    mock_client.get = AsyncMock(return_value=mock_response)
+
+    steamgifts_client._client = mock_client
+
+    giveaways = await steamgifts_client.get_giveaways(giveaway_type="wishlist")
+
+    assert len(giveaways) == 1
+    assert giveaways[0]["code"] == "Real1"
+    assert giveaways[0]["game_name"] == "Real Game"
+    assert giveaways[0]["is_wishlist"] is True
+
+
+@pytest.mark.asyncio
 async def test_get_giveaways_with_search(steamgifts_client):
     """Test fetching giveaways with search query."""
     mock_response = MagicMock()
@@ -273,7 +431,7 @@ async def test_parse_giveaway_element_success(steamgifts_client):
     <div class="giveaway__row-inner-wrap">
         <a href="/giveaway/XyZ99/awesome-game" class="giveaway__heading__name">Awesome Game</a>
         <span class="giveaway__heading__thin">(75P)</span>
-        <span class="giveaway__links">250 entries</span>
+        <div class="giveaway__links">250 entries</div>
         <span data-timestamp="1640000000"></span>
         <a class="giveaway_image_thumbnail" style="background-image:url('https://cdn.akamai.steamstatic.com/steam/apps/123456/header.jpg')"></a>
     </div>
@@ -291,6 +449,53 @@ async def test_parse_giveaway_element_success(steamgifts_client):
     assert result["entries"] == 250
     assert result["game_id"] == 123456
     assert isinstance(result["end_time"], datetime)
+
+
+@pytest.mark.asyncio
+async def test_parse_giveaway_element_entries_with_thousands_separator(
+    steamgifts_client,
+):
+    """Entry counts with a thousands separator (e.g. "1,619 entries") parse
+    correctly, and don't collide with the singular "1 entry" wording."""
+    from bs4 import BeautifulSoup
+
+    html = """
+    <div class="giveaway__row-inner-wrap">
+        <a href="/giveaway/AbCd1/big-giveaway" class="giveaway__heading__name">Big Giveaway</a>
+        <span class="giveaway__heading__thin">(50P)</span>
+        <div class="giveaway__links">1,619 entries 5 comments</div>
+    </div>
+    """
+
+    soup = BeautifulSoup(html, "html.parser")
+    element = soup.find("div", class_="giveaway__row-inner-wrap")
+
+    result = steamgifts_client._parse_giveaway_element(element)
+
+    assert result is not None
+    assert result["entries"] == 1619
+
+
+@pytest.mark.asyncio
+async def test_parse_giveaway_element_entries_singular(steamgifts_client):
+    """A giveaway with exactly one entry ("1 entry") is parsed as 1."""
+    from bs4 import BeautifulSoup
+
+    html = """
+    <div class="giveaway__row-inner-wrap">
+        <a href="/giveaway/AbCd2/tiny-giveaway" class="giveaway__heading__name">Tiny Giveaway</a>
+        <span class="giveaway__heading__thin">(5P)</span>
+        <div class="giveaway__links">1 entry</div>
+    </div>
+    """
+
+    soup = BeautifulSoup(html, "html.parser")
+    element = soup.find("div", class_="giveaway__row-inner-wrap")
+
+    result = steamgifts_client._parse_giveaway_element(element)
+
+    assert result is not None
+    assert result["entries"] == 1
 
 
 @pytest.mark.asyncio

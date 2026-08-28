@@ -14,12 +14,15 @@ export interface Giveaway {
   game_id: number | null;
   price: number;
   copies: number;
+  entries: number;
+  win_chance: number;
   end_time: string | null;
   discovered_at: string;
   entered_at: string | null;
   is_hidden: boolean;
   is_entered: boolean;
   is_wishlist: boolean;
+  is_dlc: boolean;
   is_won: boolean;
   won_at: string | null;
   is_safe: boolean | null;
@@ -97,6 +100,7 @@ export interface Settings {
   autojoin_min_score: number;
   autojoin_min_reviews: number;
   autojoin_max_game_age: number | null;
+  wishlist_priority: boolean;
   scan_interval_minutes: number;
   max_entries_per_cycle: number;
   automation_enabled: boolean;
@@ -296,6 +300,7 @@ export interface Account {
   autojoin_min_score: number;
   autojoin_min_reviews: number;
   autojoin_max_game_age: number | null;
+  wishlist_priority: boolean;
   scan_interval_minutes: number;
   max_entries_per_cycle: number | null;
   automation_enabled: boolean;

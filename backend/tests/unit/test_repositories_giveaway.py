@@ -1,12 +1,11 @@
 """Unit tests for GiveawayRepository."""
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
-from datetime import datetime, timedelta, timezone
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
 from models.base import Base
-from models.game import Game  # Import Game so foreign key works
-from models.giveaway import Giveaway
 from repositories.giveaway import GiveawayRepository
 
 
@@ -63,7 +62,7 @@ async def test_get_active_returns_only_active(test_db):
     """Test getting active giveaways excludes expired ones."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Active giveaway
         await repo.create(
@@ -96,7 +95,7 @@ async def test_get_active_excludes_hidden(test_db):
     """Test getting active giveaways excludes hidden ones."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Active, not hidden
         await repo.create(
@@ -131,7 +130,7 @@ async def test_get_active_with_limit(test_db):
     """Test getting active giveaways with limit."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create 5 active giveaways
         for i in range(5):
@@ -155,7 +154,7 @@ async def test_get_active_ordered_by_end_time(test_db):
     """Test active giveaways are ordered by end_time (soonest first)."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Create in reverse order
         await repo.create(
@@ -183,11 +182,86 @@ async def test_get_active_ordered_by_end_time(test_db):
 
 
 @pytest.mark.asyncio
+async def test_get_active_min_chance_filter(test_db):
+    """min_chance filters by copies/entries*100; no-entries-yet always passes."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        # 1 copy / 200 entries = 0.5% chance -> fails a 10% min_chance filter
+        await repo.create(
+            code="LONGSHOT",
+            game_name="Game 1",
+            price=50,
+            copies=1,
+            entries=200,
+            url="http://test.com/1",
+            end_time=now + timedelta(hours=24),
+        )
+        # 1 copy / 5 entries = 20% chance -> passes
+        await repo.create(
+            code="GOODODDS",
+            game_name="Game 2",
+            price=50,
+            copies=1,
+            entries=5,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+        )
+        # No entries recorded yet -> always passes regardless of min_chance
+        await repo.create(
+            code="UNSCANNED",
+            game_name="Game 3",
+            price=50,
+            copies=1,
+            entries=0,
+            url="http://test.com/3",
+            end_time=now + timedelta(hours=24),
+        )
+
+        await session.commit()
+
+        active = await repo.get_active(min_chance=10)
+
+        assert {ga.code for ga in active} == {"GOODODDS", "UNSCANNED"}
+
+
+@pytest.mark.asyncio
+async def test_get_active_ending_within_minutes_filter(test_db):
+    """ending_within_minutes only returns giveaways ending soon."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        await repo.create(
+            code="SOON",
+            game_name="Game 1",
+            price=50,
+            url="http://test.com/1",
+            end_time=now + timedelta(minutes=30),
+        )
+        await repo.create(
+            code="LATER",
+            game_name="Game 2",
+            price=50,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+        )
+
+        await session.commit()
+
+        active = await repo.get_active(ending_within_minutes=60)
+
+        assert len(active) == 1
+        assert active[0].code == "SOON"
+
+
+@pytest.mark.asyncio
 async def test_get_eligible_basic_filters(test_db):
     """Test getting eligible giveaways with basic price filter."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Eligible (price >= 50)
         await repo.create(
@@ -220,7 +294,7 @@ async def test_get_eligible_excludes_entered(test_db):
     """Test eligible giveaways excludes already entered."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Not entered
         await repo.create(
@@ -255,7 +329,7 @@ async def test_get_eligible_with_max_price(test_db):
     """Test eligible giveaways with max price filter."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         await repo.create(
             code="GA1",
@@ -286,7 +360,7 @@ async def test_get_eligible_ordered_by_price_desc(test_db):
     """Test eligible giveaways ordered by price descending."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         await repo.create(
             code="LOW",
@@ -310,6 +384,158 @@ async def test_get_eligible_ordered_by_price_desc(test_db):
         assert len(eligible) == 2
         assert eligible[0].code == "HIGH"  # Highest price first
         assert eligible[1].code == "LOW"
+
+
+@pytest.mark.asyncio
+async def test_get_eligible_exclude_wishlist(test_db):
+    """Test get_eligible(exclude_wishlist=True) drops wishlist giveaways."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        await repo.create(
+            code="WISH",
+            game_name="Wishlist Game",
+            price=50,
+            url="http://test.com/1",
+            end_time=now + timedelta(hours=24),
+            is_wishlist=True,
+        )
+        await repo.create(
+            code="REGULAR",
+            game_name="Regular Game",
+            price=50,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+            is_wishlist=False,
+        )
+
+        await session.commit()
+
+        eligible = await repo.get_eligible(min_price=10, exclude_wishlist=True)
+
+        assert len(eligible) == 1
+        assert eligible[0].code == "REGULAR"
+
+
+@pytest.mark.asyncio
+async def test_get_eligible_wishlist_bypasses_price_filter(test_db):
+    """get_eligible_wishlist() only respects active/hidden/entered, not price."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        # Would fail a min_price=50 filter, but wishlist bypasses it
+        await repo.create(
+            code="CHEAP_WISH",
+            game_name="Wishlist Game",
+            price=5,
+            url="http://test.com/1",
+            end_time=now + timedelta(hours=24),
+            is_wishlist=True,
+        )
+        # Not on the wishlist -> excluded regardless of price
+        await repo.create(
+            code="REGULAR",
+            game_name="Regular Game",
+            price=100,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+            is_wishlist=False,
+        )
+        # Hidden wishlist giveaways are still excluded
+        await repo.create(
+            code="HIDDEN_WISH",
+            game_name="Hidden Wishlist Game",
+            price=5,
+            url="http://test.com/3",
+            end_time=now + timedelta(hours=24),
+            is_wishlist=True,
+            is_hidden=True,
+        )
+
+        await session.commit()
+
+        eligible = await repo.get_eligible_wishlist()
+
+        assert len(eligible) == 1
+        assert eligible[0].code == "CHEAP_WISH"
+
+
+@pytest.mark.asyncio
+async def test_get_eligible_dlc_bypasses_price_filter(test_db):
+    """get_eligible_dlc() only respects active/hidden/entered, not price."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        # Would fail a min_price=50 filter, but DLC bypasses it
+        await repo.create(
+            code="CHEAP_DLC",
+            game_name="Some DLC",
+            price=5,
+            url="http://test.com/1",
+            end_time=now + timedelta(hours=24),
+            is_dlc=True,
+        )
+        # Not a DLC giveaway -> excluded regardless of price
+        await repo.create(
+            code="REGULAR",
+            game_name="Regular Game",
+            price=100,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+            is_dlc=False,
+        )
+        # Hidden DLC giveaways are still excluded
+        await repo.create(
+            code="HIDDEN_DLC",
+            game_name="Hidden DLC",
+            price=5,
+            url="http://test.com/3",
+            end_time=now + timedelta(hours=24),
+            is_dlc=True,
+            is_hidden=True,
+        )
+
+        await session.commit()
+
+        eligible = await repo.get_eligible_dlc()
+
+        assert len(eligible) == 1
+        assert eligible[0].code == "CHEAP_DLC"
+
+
+@pytest.mark.asyncio
+async def test_get_eligible_exclude_dlc(test_db):
+    """Test get_eligible(exclude_dlc=True) drops DLC giveaways."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+        now = datetime.now(UTC)
+
+        await repo.create(
+            code="DLC1",
+            game_name="Some DLC",
+            price=50,
+            url="http://test.com/1",
+            end_time=now + timedelta(hours=24),
+            is_dlc=True,
+        )
+        await repo.create(
+            code="REGULAR",
+            game_name="Regular Game",
+            price=50,
+            url="http://test.com/2",
+            end_time=now + timedelta(hours=24),
+            is_dlc=False,
+        )
+
+        await session.commit()
+
+        eligible = await repo.get_eligible(min_price=10, exclude_dlc=True)
+
+        assert len(eligible) == 1
+        assert eligible[0].code == "REGULAR"
 
 
 @pytest.mark.asyncio
@@ -389,7 +615,7 @@ async def test_get_entered(test_db):
     """Test getting entered giveaways."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         await repo.create(
             code="NOT_ENTERED",
@@ -522,7 +748,7 @@ async def test_mark_entered_with_custom_time(test_db):
     """Test marking giveaway as entered with custom timestamp."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        custom_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        custom_time = datetime(2025, 1, 1, 12, 0, 0, tzinfo=UTC)
 
         giveaway = await repo.create(
             code="GA1", game_name="Game 1", price=50, url="http://test.com"
@@ -540,7 +766,7 @@ async def test_get_expiring_soon(test_db):
     """Test getting giveaways expiring soon."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # Expires in 6 hours
         await repo.create(
@@ -582,7 +808,7 @@ async def test_get_expiring_soon_excludes_entered(test_db):
     """Test expiring soon excludes already entered giveaways."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         await repo.create(
             code="AVAILABLE",
@@ -615,7 +841,7 @@ async def test_count_active(test_db):
     """Test counting active giveaways."""
     async with test_db() as session:
         repo = GiveawayRepository(session)
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
 
         # 2 active
         await repo.create(
@@ -879,3 +1105,36 @@ async def test_create_or_update_by_code_updates_existing(test_db):
         # Verify only one record exists
         all_giveaways = await repo.get_all()
         assert len(all_giveaways) == 1
+
+
+@pytest.mark.asyncio
+async def test_get_daily_wins(test_db):
+    """get_daily_wins groups won giveaways by day within the window."""
+    async with test_db() as session:
+        repo = GiveawayRepository(session)
+
+        now = datetime.now(UTC)
+        await repo.create(
+            code="WIN1", game_name="A", price=10, url="http://x/1",
+            is_won=True, won_at=now,
+        )
+        await repo.create(
+            code="WIN2", game_name="B", price=10, url="http://x/2",
+            is_won=True, won_at=now,
+        )
+        await repo.create(
+            code="WIN3", game_name="C", price=10, url="http://x/3",
+            is_won=True, won_at=now - timedelta(days=2),
+        )
+        await repo.create(
+            code="OLDWIN", game_name="D", price=10, url="http://x/4",
+            is_won=True, won_at=now - timedelta(days=30),
+        )
+        await repo.create(code="NOWIN", game_name="E", price=10, url="http://x/5")
+        await session.commit()
+
+        rows = await repo.get_daily_wins(since=now - timedelta(days=7))
+
+        assert len(rows) == 2  # two days with wins inside the window
+        assert rows[-1]["wins"] == 2  # today, ascending order
+        assert rows[0]["wins"] == 1

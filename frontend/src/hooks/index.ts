@@ -57,11 +57,14 @@ export { useEntries, entryKeys, type EntryFilters } from "./useEntries";
 // Analytics hooks
 export {
   useDashboard,
+  useSessionStatus,
   useEntryStats,
   useGiveawayStats,
   useGameStats,
+  useEntryTrends,
   analyticsKeys,
   type TimeRangeFilter,
+  type TrendDataPoint,
 } from "./useAnalytics";
 
 // Log hooks

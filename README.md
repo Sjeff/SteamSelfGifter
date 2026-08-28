@@ -56,6 +56,17 @@ docker-compose up -d
 
 No clone needed — `docker-compose.yml` pulls the pre-built image from `ghcr.io` directly. It already sets `SESSION_COOKIE_SECURE=false`, since it has no TLS termination out of the box — see [Login and TLS](#login-and-tls) if you're putting your own HTTPS reverse proxy in front of it.
 
+#### Image tags
+
+| Tag                 | Meaning                                                        |
+| ------------------- | -------------------------------------------------------------- |
+| `latest`            | Last tagged release (stable channel)                           |
+| `X.Y.Z`, `X.Y`, `X` | Specific release versions                                      |
+| `nightly`           | Latest master build, also rebuilt daily for base-image updates |
+| `<sha>`             | Exact commit builds                                            |
+
+Releases are cut by pushing a git tag: `git tag v3.2.0 && git push origin v3.2.0`.
+
 ### Development / build from source
 
 ```bash

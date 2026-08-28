@@ -1,6 +1,14 @@
-import { Sun, Moon, Activity, Wifi, WifiOff } from "lucide-react";
+import {
+  Sun,
+  Moon,
+  Activity,
+  Wifi,
+  WifiOff,
+  UserCheck,
+  UserX,
+} from "lucide-react";
 import { useThemeStore } from "@/stores/themeStore";
-import { useWebSocketStatus } from "@/hooks";
+import { useSessionStatus, useWebSocketStatus } from "@/hooks";
 
 interface HeaderProps {
   schedulerRunning?: boolean;
@@ -16,6 +24,17 @@ export function Header({
 }: HeaderProps) {
   const { isDark, toggle } = useThemeStore();
   const { isConnected } = useWebSocketStatus();
+  const { data: session } = useSessionStatus();
+
+  let sessionTitle = "SteamGifts session not configured";
+  if (session?.configured && session.valid) {
+    sessionTitle = session.username
+      ? `Connected to SteamGifts as ${session.username}`
+      : "Connected to SteamGifts";
+  } else if (session?.configured) {
+    sessionTitle =
+      "SteamGifts session invalid or expired — update it on the Accounts page";
+  }
 
   // Determine status color and text
   let statusColor = "text-gray-400";
@@ -40,6 +59,27 @@ export function Header({
         </h1>
 
         <div className="flex items-center gap-4">
+          {/* SteamGifts Session Indicator */}
+          {session && (
+            <div className="flex items-center gap-1" title={sessionTitle}>
+              {session.configured && session.valid ? (
+                <UserCheck
+                  className="text-green-500"
+                  size={16}
+                  aria-label={sessionTitle}
+                />
+              ) : (
+                <UserX
+                  className={
+                    session.configured ? "text-red-500" : "text-gray-400"
+                  }
+                  size={16}
+                  aria-label={sessionTitle}
+                />
+              )}
+            </div>
+          )}
+
           {/* WebSocket Connection Indicator */}
           <div
             className="flex items-center gap-1"

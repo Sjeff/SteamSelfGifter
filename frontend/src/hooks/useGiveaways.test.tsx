@@ -55,12 +55,15 @@ const mockGiveaway: Giveaway = {
   game_id: 12345,
   price: 5,
   copies: 1,
+  entries: 0,
+  win_chance: 100,
   end_time: "2024-01-02T00:00:00Z",
   discovered_at: "2024-01-01T00:00:00Z",
   entered_at: null,
   is_hidden: false,
   is_entered: false,
   is_wishlist: false,
+  is_dlc: false,
   is_won: false,
   won_at: null,
   is_safe: true,
@@ -128,6 +131,52 @@ describe("useGiveaways", () => {
       // Active status uses /active endpoint, type and search are params
       expect(mockApi.get).toHaveBeenCalledWith(
         "/api/v1/giveaways/active?type=game&search=test&limit=20",
+      );
+    });
+
+    it("should map chance and time-remaining filters to query params", async () => {
+      mockApi.get.mockResolvedValueOnce({
+        success: true,
+        data: { giveaways: [], count: 0 },
+      });
+
+      const { result } = renderHook(
+        () =>
+          useGiveaways({
+            status: "active",
+            minChance: 0.5,
+            endingWithin: 360,
+          }),
+        { wrapper: createWrapper() },
+      );
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(mockApi.get).toHaveBeenCalledWith(
+        "/api/v1/giveaways/active?min_chance=0.5&ending_within=360&limit=20",
+      );
+    });
+
+    it("should omit chance and time filters when zero/unset", async () => {
+      mockApi.get.mockResolvedValueOnce({
+        success: true,
+        data: { giveaways: [], count: 0 },
+      });
+
+      const { result } = renderHook(
+        () =>
+          useGiveaways({ status: "wishlist", minChance: 0, endingWithin: 0 }),
+        { wrapper: createWrapper() },
+      );
+
+      await waitFor(() => {
+        expect(result.current.isSuccess).toBe(true);
+      });
+
+      expect(mockApi.get).toHaveBeenCalledWith(
+        "/api/v1/giveaways/wishlist?limit=20",
       );
     });
 

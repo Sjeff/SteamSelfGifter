@@ -1,9 +1,9 @@
 """Giveaway entry tracking model."""
 
-from datetime import datetime, timezone
-from sqlalchemy import String, Integer, DateTime, ForeignKey, Text
+from datetime import UTC, datetime
+
+from sqlalchemy import ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
-from typing import Optional
 
 from models.base import Base, TimestampMixin, TZDateTime
 
@@ -21,7 +21,7 @@ class Entry(Base, TimestampMixin):
 
         Entry Details:
             points_spent: SteamGifts points spent on entry
-            entry_type: How entry was made - "manual", "auto", "wishlist"
+            entry_type: How entry was made - "manual", "auto", "wishlist", "dlc"
             status: Entry result - "success", "failed", "pending"
 
         Tracking:
@@ -39,6 +39,7 @@ class Entry(Base, TimestampMixin):
         - "manual": User manually entered via UI/API
         - "auto": Automatically entered via autojoin scheduler
         - "wishlist": Automatically entered from wishlist scan
+        - "dlc": Automatically entered from DLC priority scan
 
     Status Values:
         - "success": Entry completed successfully
@@ -80,7 +81,7 @@ class Entry(Base, TimestampMixin):
         index=True,
         comment="Foreign key to giveaway",
     )
-    account_id: Mapped[Optional[int]] = mapped_column(
+    account_id: Mapped[int | None] = mapped_column(
         Integer,
         ForeignKey("accounts.id"),
         nullable=True,
@@ -97,7 +98,7 @@ class Entry(Base, TimestampMixin):
     entry_type: Mapped[str] = mapped_column(
         String,
         nullable=False,
-        comment="Entry method: manual, auto, wishlist",
+        comment="Entry method: manual, auto, wishlist, dlc",
     )
     status: Mapped[str] = mapped_column(
         String,
@@ -109,7 +110,7 @@ class Entry(Base, TimestampMixin):
     entered_at: Mapped[datetime] = mapped_column(
         TZDateTime,
         nullable=False,
-        default=lambda: datetime.now(timezone.utc),
+        default=lambda: datetime.now(UTC),
         comment="When entry was attempted (UTC)",
     )
     error_message: Mapped[str | None] = mapped_column(

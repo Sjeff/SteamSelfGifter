@@ -4,24 +4,24 @@ Background job that scans SteamGifts for new giveaways and syncs them
 to the local database.
 """
 
-from datetime import datetime, UTC
-from typing import Dict, Any
+from datetime import UTC, datetime
+from typing import Any
 
 import structlog
 
-from db.session import AsyncSessionLocal
-from services.giveaway_service import GiveawayService
-from services.game_service import GameService
-from services.settings_service import SettingsService
-from services.notification_service import NotificationService
-from utils.steamgifts_client import SteamGiftsClient
-from utils.steam_client import SteamClient
 from core.events import event_manager
+from db.session import AsyncSessionLocal
+from services.game_service import GameService
+from services.giveaway_service import GiveawayService
+from services.notification_service import NotificationService
+from services.settings_service import SettingsService
+from utils.steam_client import SteamClient
+from utils.steamgifts_client import SteamGiftsClient
 
 logger = structlog.get_logger()
 
 
-async def scan_giveaways(account_id: int = None) -> Dict[str, Any]:
+async def scan_giveaways(account_id: int = None) -> dict[str, Any]:
     """
     Scan SteamGifts for giveaways and sync to database.
 
@@ -97,6 +97,22 @@ async def scan_giveaways(account_id: int = None) -> Dict[str, Any]:
                 pages=max_pages
             )
 
+            # Also scan one wishlist page (like the automation cycle) so the
+            # Wishlist tab is populated by manual scans too. A wishlist
+            # failure shouldn't fail the whole scan.
+            wishlist_new = wishlist_updated = 0
+            try:
+                wishlist_new, wishlist_updated = await giveaway_service.sync_giveaways(
+                    pages=1, giveaway_type="wishlist"
+                )
+            except Exception as e:
+                logger.error("scan_wishlist_failed", error=str(e))
+                await notification_service.log_activity(
+                    level="error",
+                    event_type="scan_wishlist_failed",
+                    message=f"Wishlist scan failed: {e}",
+                )
+
             # Calculate time taken
             end_time = datetime.now(UTC)
             scan_time = (end_time - start_time).total_seconds()
@@ -104,6 +120,8 @@ async def scan_giveaways(account_id: int = None) -> Dict[str, Any]:
             results = {
                 "new": new_count,
                 "updated": updated_count,
+                "wishlist_new": wishlist_new,
+                "wishlist_updated": wishlist_updated,
                 "pages_scanned": max_pages,
                 "scan_time": round(scan_time, 2),
                 "skipped": False,
@@ -119,6 +137,8 @@ async def scan_giveaways(account_id: int = None) -> Dict[str, Any]:
                 "giveaway_scan_completed",
                 new=new_count,
                 updated=updated_count,
+                wishlist_new=wishlist_new,
+                wishlist_updated=wishlist_updated,
                 pages=max_pages,
                 scan_time=scan_time,
             )
@@ -145,7 +165,7 @@ async def scan_giveaways(account_id: int = None) -> Dict[str, Any]:
             await steam_client.close()
 
 
-async def quick_scan(account_id: int = None) -> Dict[str, Any]:
+async def quick_scan(account_id: int = None) -> dict[str, Any]:
     """
     Perform a quick scan (single page only).
 

@@ -28,6 +28,19 @@ export interface TimeRangeFilter {
   to_date?: string;
 }
 
+async function fetchDashboard(
+  selectedAccountId: number | null,
+): Promise<DashboardData | undefined> {
+  const params = selectedAccountId ? `?account_id=${selectedAccountId}` : "";
+  const response = await api.get<DashboardData>(
+    `/api/v1/analytics/dashboard${params}`,
+  );
+  if (!response.success) {
+    throw new Error(response.error || "Failed to fetch dashboard data");
+  }
+  return response.data;
+}
+
 /**
  * Fetch dashboard overview data
  */
@@ -36,20 +49,29 @@ export function useDashboard() {
 
   return useQuery({
     queryKey: [...analyticsKeys.dashboard, selectedAccountId],
-    queryFn: async () => {
-      const params = selectedAccountId
-        ? `?account_id=${selectedAccountId}`
-        : "";
-      const response = await api.get<DashboardData>(
-        `/api/v1/analytics/dashboard${params}`,
-      );
-      if (!response.success) {
-        throw new Error(response.error || "Failed to fetch dashboard data");
-      }
-      return response.data;
-    },
+    queryFn: () => fetchDashboard(selectedAccountId),
     // Dashboard refreshes every 30 seconds
     refetchInterval: 30_000,
+  });
+}
+
+/**
+ * SteamGifts session status for the header indicator, scoped to the
+ * currently selected account.
+ *
+ * Shares the useDashboard query cache but deliberately does NOT poll: the
+ * dashboard endpoint live-tests the session against SteamGifts, and the
+ * header is mounted on every page. On the Dashboard page the shared cache
+ * is refreshed by useDashboard's interval anyway.
+ */
+export function useSessionStatus() {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+
+  return useQuery({
+    queryKey: [...analyticsKeys.dashboard, selectedAccountId],
+    queryFn: () => fetchDashboard(selectedAccountId),
+    staleTime: 60_000,
+    select: (data) => data?.session,
   });
 }
 
@@ -179,6 +201,46 @@ export function useGameStats() {
         throw new Error(response.error || "Failed to fetch game stats");
       }
       return response.data;
+    },
+  });
+}
+
+/** Per-day trend point for the Analytics trend charts */
+export interface TrendDataPoint {
+  date: string;
+  entries: number;
+  successful: number;
+  failed: number;
+  points_spent: number;
+  wins: number;
+}
+
+/** Backend response for entries/trends */
+interface TrendsResponse {
+  period: string;
+  trends: TrendDataPoint[];
+}
+
+/**
+ * Fetch per-day entry/points/win trends
+ */
+export function useEntryTrends(period: "week" | "month" | "year" = "month") {
+  const selectedAccountId = useAccountStore((s) => s.selectedAccountId);
+
+  return useQuery({
+    queryKey: [...analyticsKeys.entries, "trends", period, selectedAccountId],
+    queryFn: async () => {
+      const params = new URLSearchParams({ period });
+      if (selectedAccountId) {
+        params.set("account_id", String(selectedAccountId));
+      }
+      const response = await api.get<TrendsResponse>(
+        `/api/v1/analytics/entries/trends?${params.toString()}`,
+      );
+      if (!response.success) {
+        throw new Error(response.error || "Failed to fetch entry trends");
+      }
+      return response.data?.trends ?? [];
     },
   });
 }

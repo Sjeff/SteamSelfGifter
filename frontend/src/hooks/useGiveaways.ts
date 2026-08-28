@@ -24,7 +24,7 @@ export const giveawayKeys = {
  * Filter options for giveaways
  */
 export interface GiveawayFilters {
-  status?: "active" | "entered" | "wishlist" | "won";
+  status?: "active" | "entered" | "wishlist" | "dlc" | "won";
   type?: "game" | "dlc" | "bundle" | "all";
   search?: string;
   sort?: "end_time" | "price" | "discovered_at";
@@ -33,6 +33,8 @@ export interface GiveawayFilters {
   limit?: number;
   minScore?: number; // Minimum review score (0-10)
   safetyFilter?: "all" | "safe" | "unsafe"; // Filter by safety status
+  minChance?: number; // Minimum win chance in percent (0.01-100)
+  endingWithin?: number; // Only giveaways ending within this many minutes
   accountId?: number; // Account scope (defaults to selected account from store)
 }
 
@@ -56,6 +58,64 @@ interface GiveawaysApiResponse {
 }
 
 /**
+ * Build the endpoint path and non-pagination query params shared by
+ * `useGiveaways` and `useInfiniteGiveaways`. Pagination (`limit`/`offset`)
+ * is appended by each hook separately since they paginate differently
+ * (page-based vs. infinite-scroll offset).
+ */
+function buildGiveawaysRequest(
+  filters: Omit<GiveawayFilters, "page" | "limit">,
+  effectiveAccountId: number | null | undefined,
+): { endpointPath: string; params: URLSearchParams } {
+  const params = new URLSearchParams();
+  if (effectiveAccountId) params.set("account_id", String(effectiveAccountId));
+
+  // Determine which endpoint to use based on status filter
+  let endpointPath = "/api/v1/giveaways";
+  if (filters.status === "active") {
+    endpointPath = "/api/v1/giveaways/active";
+  } else if (filters.status === "wishlist") {
+    endpointPath = "/api/v1/giveaways/wishlist";
+  } else if (filters.status === "dlc") {
+    endpointPath = "/api/v1/giveaways/dlc";
+  } else if (filters.status === "won") {
+    endpointPath = "/api/v1/giveaways/won";
+  }
+
+  // Add filter parameters
+  if (filters.status === "entered") {
+    params.set("is_entered", "true");
+    params.set("active_only", "true"); // Only show active entered giveaways
+  }
+  if (filters.type && filters.type !== "all") {
+    params.set("type", filters.type);
+  }
+  if (filters.search) {
+    params.set("search", filters.search);
+  }
+  if (filters.sort) {
+    params.set("sort", filters.sort);
+  }
+  if (filters.order) {
+    params.set("order", filters.order);
+  }
+  if (filters.minScore !== undefined && filters.minScore > 0) {
+    params.set("min_score", String(filters.minScore));
+  }
+  if (filters.safetyFilter && filters.safetyFilter !== "all") {
+    params.set("is_safe", filters.safetyFilter === "safe" ? "true" : "false");
+  }
+  if (filters.minChance !== undefined && filters.minChance > 0) {
+    params.set("min_chance", String(filters.minChance));
+  }
+  if (filters.endingWithin !== undefined && filters.endingWithin > 0) {
+    params.set("ending_within", String(filters.endingWithin));
+  }
+
+  return { endpointPath, params };
+}
+
+/**
  * Fetch giveaways with optional filters
  */
 export function useGiveaways(filters: GiveawayFilters = {}) {
@@ -65,46 +125,10 @@ export function useGiveaways(filters: GiveawayFilters = {}) {
   return useQuery({
     queryKey: [...giveawayKeys.list(filters), effectiveAccountId],
     queryFn: async () => {
-      const params = new URLSearchParams();
-      if (effectiveAccountId)
-        params.set("account_id", String(effectiveAccountId));
-
-      // Determine which endpoint to use based on status filter
-      let endpointPath = "/api/v1/giveaways";
-      if (filters.status === "active") {
-        endpointPath = "/api/v1/giveaways/active";
-      } else if (filters.status === "wishlist") {
-        endpointPath = "/api/v1/giveaways/wishlist";
-      } else if (filters.status === "won") {
-        endpointPath = "/api/v1/giveaways/won";
-      }
-
-      // Add filter parameters
-      if (filters.status === "entered") {
-        params.set("is_entered", "true");
-        params.set("active_only", "true"); // Only show active entered giveaways
-      }
-      if (filters.type && filters.type !== "all") {
-        params.set("type", filters.type);
-      }
-      if (filters.search) {
-        params.set("search", filters.search);
-      }
-      if (filters.sort) {
-        params.set("sort", filters.sort);
-      }
-      if (filters.order) {
-        params.set("order", filters.order);
-      }
-      if (filters.minScore !== undefined && filters.minScore > 0) {
-        params.set("min_score", String(filters.minScore));
-      }
-      if (filters.safetyFilter && filters.safetyFilter !== "all") {
-        params.set(
-          "is_safe",
-          filters.safetyFilter === "safe" ? "true" : "false",
-        );
-      }
+      const { endpointPath, params } = buildGiveawaysRequest(
+        filters,
+        effectiveAccountId,
+      );
 
       // Pagination
       const limit = filters.limit || 20;
@@ -155,46 +179,10 @@ export function useInfiniteGiveaways(
       effectiveAccountId,
     ],
     queryFn: async ({ pageParam = 0 }) => {
-      const params = new URLSearchParams();
-      if (effectiveAccountId)
-        params.set("account_id", String(effectiveAccountId));
-
-      // Determine which endpoint to use based on status filter
-      let endpointPath = "/api/v1/giveaways";
-      if (filters.status === "active") {
-        endpointPath = "/api/v1/giveaways/active";
-      } else if (filters.status === "wishlist") {
-        endpointPath = "/api/v1/giveaways/wishlist";
-      } else if (filters.status === "won") {
-        endpointPath = "/api/v1/giveaways/won";
-      }
-
-      // Add filter parameters
-      if (filters.status === "entered") {
-        params.set("is_entered", "true");
-        params.set("active_only", "true"); // Only show active entered giveaways
-      }
-      if (filters.type && filters.type !== "all") {
-        params.set("type", filters.type);
-      }
-      if (filters.search) {
-        params.set("search", filters.search);
-      }
-      if (filters.sort) {
-        params.set("sort", filters.sort);
-      }
-      if (filters.order) {
-        params.set("order", filters.order);
-      }
-      if (filters.minScore !== undefined && filters.minScore > 0) {
-        params.set("min_score", String(filters.minScore));
-      }
-      if (filters.safetyFilter && filters.safetyFilter !== "all") {
-        params.set(
-          "is_safe",
-          filters.safetyFilter === "safe" ? "true" : "false",
-        );
-      }
+      const { endpointPath, params } = buildGiveawaysRequest(
+        filters,
+        effectiveAccountId,
+      );
 
       // Pagination
       const limit = filters.limit || 20;
