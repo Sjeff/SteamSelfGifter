@@ -6,6 +6,8 @@ All changes were made in collaboration with [Claude](https://claude.ai) (Anthrop
 
 ## [Unreleased]
 
+## [3.2.0]
+
 ### Added
 
 - New "Prioritize Wishlist" setting (on by default): wishlist giveaways are now entered before the general autojoin pool and bypass the price/review-score/review-count/game-age filters (they still respect active/hidden/entered status and the points budget below).
